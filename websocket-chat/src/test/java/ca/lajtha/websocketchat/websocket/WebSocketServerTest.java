@@ -1,6 +1,7 @@
 package ca.lajtha.websocketchat.websocket;
 
 import ca.lajtha.websocketchat.ServerConfig;
+import ca.lajtha.websocketchat.game.chat.ChatGameController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +18,7 @@ class WebSocketServerTest {
     private ServerConfig config;
 
     @Mock
-    private WebSocketFrameHandler frameHandler;
+    private ChatGameController chatGameController;
 
     private WebSocketServer server;
 
@@ -29,13 +30,13 @@ class WebSocketServerTest {
         lenient().when(config.isSocketKeepalive()).thenReturn(true);
         lenient().when(config.getHttpMaxContentLength()).thenReturn(65536);
 
-        server = new WebSocketServer(config, frameHandler);
+        server = new WebSocketServer(config, chatGameController);
     }
 
     @Test
     void WebSocketServer_success() {
         // Act
-        WebSocketServer server = new WebSocketServer(config, frameHandler);
+        WebSocketServer server = new WebSocketServer(config, chatGameController);
 
         // Assert
         assertNotNull(server);
@@ -49,7 +50,7 @@ class WebSocketServerTest {
         // The start() method will try to bind to a real port, so we can't easily test
         // the full startup without integration tests, but we can verify the constructor works
         assertDoesNotThrow(() -> {
-            WebSocketServer testServer = new WebSocketServer(config, frameHandler);
+            WebSocketServer testServer = new WebSocketServer(config, chatGameController);
             assertNotNull(testServer);
         });
     }

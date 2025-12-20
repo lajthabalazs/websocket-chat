@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Chat Server</title>
+    <title>WebSocket Chat</title>
     <style>
         * {
             margin: 0;
@@ -25,101 +25,413 @@
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            max-width: 600px;
+            padding: 30px;
+            max-width: 800px;
             width: 100%;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 700px;
         }
         
         h1 {
             color: #333;
-            margin-bottom: 10px;
-            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-size: 2em;
+            text-align: center;
         }
         
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1em;
+        .connection-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .name-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .name-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .name-input:disabled {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+        
+        .connect-btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .connect-btn:hover:not(:disabled) {
+            background: #5568d3;
+        }
+        
+        .connect-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .disconnect-btn {
+            padding: 12px 24px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .disconnect-btn:hover {
+            background: #dc2626;
         }
         
         .status {
-            background: #f0f9ff;
-            border-left: 4px solid #3b82f6;
-            padding: 15px;
-            margin-bottom: 30px;
-            border-radius: 5px;
-        }
-        
-        .status-text {
-            color: #1e40af;
-            font-weight: 500;
-        }
-        
-        .info-section {
-            margin-bottom: 25px;
-        }
-        
-        .info-title {
-            color: #333;
-            font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 1.2em;
-        }
-        
-        .info-content {
-            color: #666;
-            line-height: 1.6;
-        }
-        
-        .endpoint {
-            background: #f8f9fa;
-            padding: 12px;
+            padding: 10px;
+            margin-bottom: 20px;
             border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            color: #e83e8c;
-            margin: 5px 0;
-            word-break: break-all;
+            font-size: 0.9em;
+            text-align: center;
         }
         
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            text-align: center;
-            color: #999;
+        .status.connected {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status.disconnected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status.connecting {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .messages-container {
+            flex: 1;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            background: #f9fafb;
+            min-height: 300px;
+        }
+        
+        .message {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .message.system {
+            border-left-color: #9ca3af;
+            background: #f3f4f6;
+            font-style: italic;
+            color: #6b7280;
+        }
+        
+        .message-header {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 4px;
             font-size: 0.9em;
+        }
+        
+        .message.system .message-header {
+            color: #6b7280;
+        }
+        
+        .message-content {
+            color: #333;
+            word-wrap: break-word;
+        }
+        
+        .input-section {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .message-input:disabled {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+        
+        .send-btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .send-btn:hover:not(:disabled) {
+            background: #5568d3;
+        }
+        
+        .send-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 WebSocket Chat Server</h1>
-        <p class="subtitle">Real-time communication server</p>
+        <h1>💬 WebSocket Chat</h1>
         
-        <div class="status">
-            <span class="status-text">✓ Server is running and ready to accept connections</span>
+        <div class="connection-section">
+            <input 
+                type="text" 
+                id="screenNameInput" 
+                class="name-input" 
+                placeholder="Enter your screen name..."
+                maxlength="50"
+            >
+            <button id="connectBtn" class="connect-btn">Connect</button>
+            <button id="disconnectBtn" class="disconnect-btn hidden">Disconnect</button>
         </div>
         
-        <div class="info-section">
-            <div class="info-title">Available Endpoints</div>
-            <div class="info-content">
-                <div class="endpoint">WebSocket: ws://localhost:8080/websocket</div>
-                <div class="endpoint">HTTP: http://localhost:8081</div>
-                <div class="endpoint">Health Check: http://localhost:8081/health</div>
-            </div>
-        </div>
+        <div id="status" class="status disconnected">Disconnected</div>
         
-        <div class="info-section">
-            <div class="info-title">About</div>
-            <div class="info-content">
-                This server provides both WebSocket and HTTP endpoints. Connect to the WebSocket endpoint for real-time bidirectional communication, or use the HTTP endpoints for standard REST API interactions.
-            </div>
-        </div>
+        <div id="messagesContainer" class="messages-container"></div>
         
-        <div class="footer">
-            <p>Powered by Netty</p>
+        <div class="input-section">
+            <input 
+                type="text" 
+                id="messageInput" 
+                class="message-input" 
+                placeholder="Type a message..."
+                disabled
+                maxlength="500"
+            >
+            <button id="sendBtn" class="send-btn" disabled>Send</button>
         </div>
     </div>
+
+    <script>
+        let ws = null;
+        let screenName = '';
+        let isConnected = false;
+
+        const screenNameInput = document.getElementById('screenNameInput');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const status = document.getElementById('status');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function updateStatus(text, className) {
+            status.textContent = text;
+            status.className = `status ${className}`;
+        }
+
+        function addMessage(screenName, message, isSystem = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isSystem ? 'system' : ''}`;
+            
+            const header = document.createElement('div');
+            header.className = 'message-header';
+            header.textContent = isSystem ? 'System' : screenName;
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = message;
+            
+            messageDiv.appendChild(header);
+            messageDiv.appendChild(content);
+            messagesContainer.appendChild(messageDiv);
+            
+            // Auto-scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function connect() {
+            const name = screenNameInput.value.trim();
+            if (!name) {
+                alert('Please enter a screen name');
+                return;
+            }
+
+            screenName = name;
+            updateStatus('Connecting...', 'connecting');
+            connectBtn.disabled = true;
+            screenNameInput.disabled = true;
+
+            // Determine WebSocket URL based on current page location
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname;
+            const wsUrl = `${protocol}//${host}:8080/websocket`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                isConnected = true;
+                updateStatus('Connected', 'connected');
+                connectBtn.classList.add('hidden');
+                disconnectBtn.classList.remove('hidden');
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                
+                // Set screen name
+                const setNameMessage = {
+                    type: 'setScreenName',
+                    screenName: screenName
+                };
+                ws.send(JSON.stringify(setNameMessage));
+                
+                // Request existing messages
+                const getMessages = {
+                    type: 'getMessages'
+                };
+                ws.send(JSON.stringify(getMessages));
+                
+                addMessage('', 'Connected to chat server', true);
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleServerMessage(message);
+                } catch (e) {
+                    // Handle non-JSON messages (like the welcome message)
+                    if (event.data.includes('Welcome')) {
+                        // Ignore welcome message, we handle connection ourselves
+                        return;
+                    }
+                    addMessage('', event.data, true);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus('Connection error', 'disconnected');
+            };
+
+            ws.onclose = () => {
+                isConnected = false;
+                updateStatus('Disconnected', 'disconnected');
+                connectBtn.disabled = false;
+                connectBtn.classList.remove('hidden');
+                disconnectBtn.classList.add('hidden');
+                screenNameInput.disabled = false;
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+                addMessage('', 'Disconnected from server', true);
+            };
+        }
+
+        function handleServerMessage(message) {
+            switch (message.type) {
+                case 'getMessagesResponse':
+                    if (message.messages && Array.isArray(message.messages)) {
+                        message.messages.forEach(msg => {
+                            addMessage(msg.screenName, msg.message);
+                        });
+                    }
+                    break;
+                    
+                case 'messageReceivedNotification':
+                    addMessage(message.screenName, message.message);
+                    break;
+                    
+                case 'playerJoinedChatNotification':
+                    addMessage('', `${message.screenName} joined the chat`, true);
+                    break;
+                    
+                case 'playerLeftChatNotification':
+                    addMessage('', `${message.screenName} left the chat`, true);
+                    break;
+                    
+                default:
+                    console.log('Unknown message type:', message);
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || !isConnected) {
+                return;
+            }
+
+            const sendMessageCmd = {
+                type: 'sendMessage',
+                message: message
+            };
+            
+            ws.send(JSON.stringify(sendMessageCmd));
+            messageInput.value = '';
+        }
+
+        // Event listeners
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !sendBtn.disabled) {
+                sendMessage();
+            }
+        });
+
+        screenNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !connectBtn.disabled) {
+                connect();
+            }
+        });
+    </script>
 </body>
 </html>
-

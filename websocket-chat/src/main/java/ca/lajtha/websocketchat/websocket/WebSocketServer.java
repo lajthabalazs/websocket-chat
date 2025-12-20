@@ -1,6 +1,8 @@
 package ca.lajtha.websocketchat.websocket;
 
 import ca.lajtha.websocketchat.ServerConfig;
+import ca.lajtha.websocketchat.game.chat.ChatGame;
+import ca.lajtha.websocketchat.game.chat.ChatGameController;
 import com.google.inject.Inject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -15,12 +17,12 @@ import io.netty.handler.logging.LoggingHandler;
 
 public class WebSocketServer {
     private final ServerConfig config;
-    private final WebSocketFrameHandler frameHandler;
+    private final ChatGameController game;
 
     @Inject
-    public WebSocketServer(ServerConfig config, WebSocketFrameHandler frameHandler) {
+    public WebSocketServer(ServerConfig config, ChatGameController game) {
         this.config = config;
-        this.frameHandler = frameHandler;
+        this.game = game;
     }
 
     public void start() throws InterruptedException {
@@ -47,7 +49,7 @@ public class WebSocketServer {
                             pipeline.addLast(new WebSocketServerProtocolHandler(config.getWebsocketPath()));
                             
                             // Custom handler for WebSocket messages
-                            pipeline.addLast(frameHandler);
+                            pipeline.addLast(new WebSocketFrameHandler(game));
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())
