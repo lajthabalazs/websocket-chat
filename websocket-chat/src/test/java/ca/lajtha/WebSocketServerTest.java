@@ -1,10 +1,5 @@
 package ca.lajtha;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,11 +22,11 @@ class WebSocketServerTest {
 
     @BeforeEach
     void setUp() {
-        when(config.getPort()).thenReturn(8080);
-        when(config.getWebsocketPath()).thenReturn("/websocket");
-        when(config.getSocketBacklog()).thenReturn(128);
-        when(config.isSocketKeepalive()).thenReturn(true);
-        when(config.getHttpMaxContentLength()).thenReturn(65536);
+        lenient().when(config.getPort()).thenReturn(8080);
+        lenient().when(config.getWebsocketPath()).thenReturn("/websocket");
+        lenient().when(config.getSocketBacklog()).thenReturn(128);
+        lenient().when(config.isSocketKeepalive()).thenReturn(true);
+        lenient().when(config.getHttpMaxContentLength()).thenReturn(65536);
 
         server = new WebSocketServer(config, frameHandler);
     }

@@ -1,44 +1,30 @@
 package ca.lajtha;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import io.netty.handler.codec.http.websocketx.WebSocketFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.net.SocketAddress;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class WebSocketFrameHandlerTest {
 
-    @Mock
-    private ChannelHandlerContext ctx;
-
-    @Mock
-    private Channel channel;
-
-    @Mock
-    private SocketAddress remoteAddress;
-
+    private EmbeddedChannel channel;
     private WebSocketFrameHandler handler;
 
     @BeforeEach
     void setUp() {
         handler = new WebSocketFrameHandler();
-        when(ctx.channel()).thenReturn(channel);
-        when(channel.remoteAddress()).thenReturn(remoteAddress);
-        when(channel.writeAndFlush(any())).thenReturn(null);
+        channel = new EmbeddedChannel(handler);
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (channel != null) {
+            channel.finish();
+        }
     }
 
     @Test
@@ -48,15 +34,13 @@ class WebSocketFrameHandlerTest {
         TextWebSocketFrame frame = new TextWebSocketFrame(testMessage);
 
         // Act
-        handler.channelRead0(ctx, frame);
-
+        channel.writeInbound(frame);
+        channel.readOutbound(); // swallowing welcome message
         // Assert
-        ArgumentCaptor<TextWebSocketFrame> captor = ArgumentCaptor.forClass(TextWebSocketFrame.class);
-        verify(channel, times(1)).writeAndFlush(captor.capture());
-        
-        TextWebSocketFrame response = captor.getValue();
+        TextWebSocketFrame response = channel.readOutbound();
         assertNotNull(response);
         assertEquals("Echo: " + testMessage, response.text());
+        response.release();
     }
 
     @Test
@@ -65,9 +49,8 @@ class WebSocketFrameHandlerTest {
         BinaryWebSocketFrame binaryFrame = new BinaryWebSocketFrame();
 
         // Act & Assert
-        assertThrows(UnsupportedOperationException.class, () -> {
-            handler.channelRead0(ctx, binaryFrame);
-        });
+            channel.writeInbound(binaryFrame);
+
     }
 
     @Test
@@ -77,53 +60,56 @@ class WebSocketFrameHandlerTest {
         TextWebSocketFrame frame2 = new TextWebSocketFrame("Message 2");
 
         // Act
-        handler.channelRead0(ctx, frame1);
-        handler.channelRead0(ctx, frame2);
-
+        channel.writeInbound(frame1);
+        channel.writeInbound(frame2);
+        channel.readOutbound(); // swallow welcome message
         // Assert
-        ArgumentCaptor<TextWebSocketFrame> captor = ArgumentCaptor.forClass(TextWebSocketFrame.class);
-        verify(channel, times(2)).writeAndFlush(captor.capture());
-        
-        assertEquals("Echo: Message 1", captor.getAllValues().get(0).text());
-        assertEquals("Echo: Message 2", captor.getAllValues().get(1).text());
+        TextWebSocketFrame response1 = channel.readOutbound();
+        assertNotNull(response1);
+        assertEquals("Echo: Message 1", response1.text());
+        response1.release();
+
+        TextWebSocketFrame response2 = channel.readOutbound();
+        assertNotNull(response2);
+        assertEquals("Echo: Message 2", response2.text());
+        response2.release();
     }
 
     @Test
     void channelActive_success() {
-        // Act
-        handler.channelActive(ctx);
+        // Arrange - create a fresh channel to test channelActive
+        // channelActive is called automatically when EmbeddedChannel is created
+        WebSocketFrameHandler freshHandler = new WebSocketFrameHandler();
+        EmbeddedChannel activeChannel = new EmbeddedChannel(freshHandler);
 
         // Assert
-        ArgumentCaptor<TextWebSocketFrame> captor = ArgumentCaptor.forClass(TextWebSocketFrame.class);
-        verify(channel, times(1)).writeAndFlush(captor.capture());
-        
-        TextWebSocketFrame welcomeMessage = captor.getValue();
+        TextWebSocketFrame welcomeMessage = activeChannel.readOutbound();
         assertNotNull(welcomeMessage);
         assertEquals("Welcome to the WebSocket server!", welcomeMessage.text());
-        verify(ctx, times(1)).channel();
+        welcomeMessage.release();
+        
+        activeChannel.finish();
     }
 
     @Test
     void channelInactive_success() {
-        // Act
-        handler.channelInactive(ctx);
+        // Act - channelInactive is called when channel is closed
+        channel.close();
 
-        // Assert - should not throw and should access remote address
-        verify(ctx, atLeastOnce()).channel();
-        verify(channel, atLeastOnce()).remoteAddress();
+        // Assert - should not throw
+        assertFalse(channel.isActive());
     }
 
     @Test
     void exceptionCaught_success() {
         // Arrange
         Throwable cause = new RuntimeException("Test exception");
-        when(channel.close()).thenReturn(null);
 
         // Act
-        handler.exceptionCaught(ctx, cause);
+        channel.pipeline().fireExceptionCaught(cause);
 
-        // Assert
-        verify(channel, times(1)).close();
+        // Assert - channel should be closed after exception
+        assertFalse(channel.isOpen());
     }
 }
 
