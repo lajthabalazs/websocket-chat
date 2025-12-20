@@ -1,5 +1,6 @@
 package ca.lajtha.websocketchat.game.chat;
 
+import ca.lajtha.websocketchat.PlayerConnection;
 import ca.lajtha.websocketchat.game.Game;
 
 import java.util.ArrayList;
@@ -10,9 +11,11 @@ import java.util.Set;
 public class ChatGameController implements Game {
 
     private final ChatGame game;
+    private final PlayerConnection playerConnection;
 
-    public ChatGameController(ChatGame game) {
+    public ChatGameController(ChatGame game, PlayerConnection playerConnection) {
         this.game = game;
+        this.playerConnection = playerConnection;
     }
 
     @Override
