@@ -1,4 +1,4 @@
-package ca.lajtha;
+package ca.lajtha.websocketchat;
 
 import com.google.inject.Inject;
 import io.netty.bootstrap.ServerBootstrap;

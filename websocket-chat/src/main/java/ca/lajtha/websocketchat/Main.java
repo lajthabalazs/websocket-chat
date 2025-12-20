@@ -1,4 +1,4 @@
-package ca.lajtha;
+package ca.lajtha.websocketchat;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;

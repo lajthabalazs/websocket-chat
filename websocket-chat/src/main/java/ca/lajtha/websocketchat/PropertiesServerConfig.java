@@ -1,4 +1,4 @@
-package ca.lajtha;
+package ca.lajtha.websocketchat;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,4 +1,4 @@
-package ca.lajtha;
+package ca.lajtha.websocketchat;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

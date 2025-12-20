@@ -1,4 +1,4 @@
-package ca.lajtha;
+package ca.lajtha.websocketchat;
 
 public interface ServerConfig {
     int getPort();
