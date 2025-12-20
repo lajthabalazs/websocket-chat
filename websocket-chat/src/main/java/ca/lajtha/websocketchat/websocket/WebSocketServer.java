@@ -15,14 +15,18 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
+import java.util.UUID;
+
 public class WebSocketServer {
     private final ServerConfig config;
     private final ChatGameController game;
+    private final PlayerWebsocketConnectionManager websocketConnectionManager;
 
     @Inject
-    public WebSocketServer(ServerConfig config, ChatGameController game) {
+    public WebSocketServer(ServerConfig config, PlayerWebsocketConnectionManager websocketConnectionManager, ChatGameController game) {
         this.config = config;
         this.game = game;
+        this.websocketConnectionManager = websocketConnectionManager;
     }
 
     public void start() throws InterruptedException {
@@ -49,7 +53,8 @@ public class WebSocketServer {
                             pipeline.addLast(new WebSocketServerProtocolHandler(config.getWebsocketPath()));
                             
                             // Custom handler for WebSocket messages
-                            pipeline.addLast(new WebSocketFrameHandler(game));
+                            WebSocketFrameHandler webSocketFrameHandler = new WebSocketFrameHandler(game, websocketConnectionManager);
+                            pipeline.addLast(webSocketFrameHandler);
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())

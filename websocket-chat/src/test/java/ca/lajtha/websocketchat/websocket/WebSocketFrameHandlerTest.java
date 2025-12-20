@@ -24,13 +24,15 @@ class WebSocketFrameHandlerTest {
     @Mock
     private Game game;
 
+    @Mock
+    private PlayerWebsocketConnectionManager websocketConnectionManager;
     
     private EmbeddedChannel channel;
     private WebSocketFrameHandler handler;
 
     @BeforeEach
     void setUp() {
-        handler = new WebSocketFrameHandler(game);
+        handler = new WebSocketFrameHandler(game, websocketConnectionManager);
         channel = new EmbeddedChannel(handler);
     }
 
@@ -113,7 +115,7 @@ class WebSocketFrameHandlerTest {
     @Test
     void channelActive_generatesPlayerIdAndNotifiesGame() {
         // Arrange - create a fresh channel to test channelActive
-        WebSocketFrameHandler freshHandler = new WebSocketFrameHandler(game);
+        WebSocketFrameHandler freshHandler = new WebSocketFrameHandler(game, websocketConnectionManager);
         EmbeddedChannel activeChannel = new EmbeddedChannel(freshHandler);
 
         // Assert - welcome message should contain playerId
@@ -169,7 +171,7 @@ class WebSocketFrameHandlerTest {
     void channelRead0_withoutPlayerId_doesNotForwardToGame() {
         // Arrange - create a handler and channel, but manually remove playerId attribute
         // to simulate edge case where message arrives before playerId is set
-        WebSocketFrameHandler testHandler = new WebSocketFrameHandler(game);
+        WebSocketFrameHandler testHandler = new WebSocketFrameHandler(game,  websocketConnectionManager);
         EmbeddedChannel testChannel = new EmbeddedChannel(testHandler);
         
         // Manually remove playerId to simulate edge case
@@ -214,8 +216,8 @@ class WebSocketFrameHandlerTest {
     @Test
     void channelActive_generatesUniquePlayerIds() {
         // Arrange - create two separate channels
-        WebSocketFrameHandler handler1 = new WebSocketFrameHandler(game);
-        WebSocketFrameHandler handler2 = new WebSocketFrameHandler(game);
+        WebSocketFrameHandler handler1 = new WebSocketFrameHandler(game,  websocketConnectionManager);
+        WebSocketFrameHandler handler2 = new WebSocketFrameHandler(game,  websocketConnectionManager);
         EmbeddedChannel channel1 = new EmbeddedChannel(handler1);
         EmbeddedChannel channel2 = new EmbeddedChannel(handler2);
 
@@ -241,7 +243,7 @@ class WebSocketFrameHandlerTest {
     @Test
     void channelInactive_withoutPlayerId_doesNotNotifyGame() {
         // Arrange - create a channel but remove playerId before closing
-        WebSocketFrameHandler testHandler = new WebSocketFrameHandler(game);
+        WebSocketFrameHandler testHandler = new WebSocketFrameHandler(game, websocketConnectionManager);
         EmbeddedChannel testChannel = new EmbeddedChannel(testHandler);
         
         // Read welcome message

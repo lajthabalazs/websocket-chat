@@ -3,6 +3,7 @@ package ca.lajtha.websocketchat.game.chat;
 import ca.lajtha.websocketchat.websocket.PlayerConnection;
 import ca.lajtha.websocketchat.game.Game;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
 
 import java.util.List;
 
@@ -12,6 +13,7 @@ public class ChatGameController implements Game, ChatMessageListener {
     private final PlayerConnection playerConnection;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Inject
     public ChatGameController(ChatGame game, PlayerConnection playerConnection) {
         this.game = game;
         this.playerConnection = playerConnection;
