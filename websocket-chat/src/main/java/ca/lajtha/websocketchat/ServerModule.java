@@ -2,6 +2,8 @@ package ca.lajtha.websocketchat;
 
 import ca.lajtha.websocketchat.game.Game;
 import ca.lajtha.websocketchat.game.VoidGame;
+import ca.lajtha.websocketchat.websocket.WebSocketFrameHandler;
+import ca.lajtha.websocketchat.websocket.WebSocketServer;
 import com.google.inject.AbstractModule;
 
 public class ServerModule extends AbstractModule {
@@ -20,6 +22,12 @@ public class ServerModule extends AbstractModule {
         
         // Bind WebSocketFrameHandler (can be instantiated per connection if needed)
         bind(WebSocketFrameHandler.class);
+        
+        // Bind HttpServer
+        bind(ca.lajtha.websocketchat.http.HttpServer.class);
+        
+        // Bind HttpRequestHandler
+        bind(ca.lajtha.websocketchat.http.HttpRequestHandler.class);
     }
 }
 

@@ -1,5 +1,6 @@
-package ca.lajtha.websocketchat;
+package ca.lajtha.websocketchat.websocket;
 
+import ca.lajtha.websocketchat.ServerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,4 +1,4 @@
-package ca.lajtha.websocketchat;
+package ca.lajtha.websocketchat.websocket;
 
 import ca.lajtha.websocketchat.game.Game;
 import io.netty.channel.embedded.EmbeddedChannel;

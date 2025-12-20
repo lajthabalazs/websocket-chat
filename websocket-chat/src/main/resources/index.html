@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat Server</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .status {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+        
+        .status-text {
+            color: #1e40af;
+            font-weight: 500;
+        }
+        
+        .info-section {
+            margin-bottom: 25px;
+        }
+        
+        .info-title {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .info-content {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .endpoint {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+            margin: 5px 0;
+            word-break: break-all;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #999;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 WebSocket Chat Server</h1>
+        <p class="subtitle">Real-time communication server</p>
+        
+        <div class="status">
+            <span class="status-text">✓ Server is running and ready to accept connections</span>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-title">Available Endpoints</div>
+            <div class="info-content">
+                <div class="endpoint">WebSocket: ws://localhost:8080/websocket</div>
+                <div class="endpoint">HTTP: http://localhost:8081</div>
+                <div class="endpoint">Health Check: http://localhost:8081/health</div>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-title">About</div>
+            <div class="info-content">
+                This server provides both WebSocket and HTTP endpoints. Connect to the WebSocket endpoint for real-time bidirectional communication, or use the HTTP endpoints for standard REST API interactions.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Powered by Netty</p>
+        </div>
+    </div>
+</body>
+</html>
+

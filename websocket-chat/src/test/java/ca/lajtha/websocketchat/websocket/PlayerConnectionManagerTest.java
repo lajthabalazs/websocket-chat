@@ -1,4 +1,4 @@
-package ca.lajtha.websocketchat;
+package ca.lajtha.websocketchat.websocket;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

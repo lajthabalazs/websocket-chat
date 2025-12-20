@@ -6,6 +6,7 @@ import java.util.Properties;
 
 public class PropertiesServerConfig implements ServerConfig {
     private final int port;
+    private final int httpPort;
     private final String websocketPath;
     private final int socketBacklog;
     private final boolean socketKeepalive;
@@ -14,6 +15,7 @@ public class PropertiesServerConfig implements ServerConfig {
     public PropertiesServerConfig() {
         Properties props = loadProperties();
         this.port = Integer.parseInt(props.getProperty("server.port", "8080"));
+        this.httpPort = Integer.parseInt(props.getProperty("http.server.port", "8081"));
         this.websocketPath = props.getProperty("websocket.path", "/websocket");
         this.socketBacklog = Integer.parseInt(props.getProperty("socket.backlog", "128"));
         this.socketKeepalive = Boolean.parseBoolean(props.getProperty("socket.keepalive", "true"));
@@ -37,6 +39,11 @@ public class PropertiesServerConfig implements ServerConfig {
     @Override
     public int getPort() {
         return port;
+    }
+
+    @Override
+    public int getHttpPort() {
+        return httpPort;
     }
 
     @Override
