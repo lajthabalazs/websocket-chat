@@ -9,22 +9,21 @@ public interface ChatMessageListener {
     /**
      * Called when a new player joins the chat game.
      *
-     * @param playerId the unique identifier of the player who joined
+     * @param screenName the unique identifier of the player who joined
      */
-    void onPlayerJoinedChat(String playerId);
+    void onPlayerJoinedChat(String screenName);
 
     /**
      * Called when a player leaves the chat game.
      *
-     * @param playerId the unique identifier of the player who left
+     * @param screenName the unique identifier of the player who left
      */
-    void onPlayerLeftChat(String playerId);
+    void onPlayerLeftChat(String screenName);
 
     /**
      * Called when a new message is received from a player.
      *
-     * @param playerId the unique identifier of the player who sent the message
-     * @param message the message text that was sent
+     * @param visibleMessage The new message
      */
-    void onMessageReceived(String playerId, String message);
+    void onMessageReceived(VisibleMessage visibleMessage);
 }

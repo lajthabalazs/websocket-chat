@@ -5,6 +5,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.util.List;
 
 @JsonTypeName("getMessagesResponse")
-public record GetMessagesResponse(List<Message> messages) implements ChatGameMessage {
+public record GetMessagesResponse(List<VisibleMessage> messages) implements ChatGameMessage {
 }
 

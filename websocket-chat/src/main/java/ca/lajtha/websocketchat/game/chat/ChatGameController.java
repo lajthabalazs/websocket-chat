@@ -24,6 +24,7 @@ public class ChatGameController implements Game, ChatMessageListener {
      * - Get messages: {"type": "getMessages"}
      * - Send message: {"type": "sendMessage", "message": "message text"}
      * - Get players: {"type": "getPlayers"}
+     * - Set screen name: {"type": "setScreenName", "screenName": "name"}
      *
      * @param jsonMessage the JSON string to deserialize
      * @return the deserialized ChatGameMessage command
@@ -58,7 +59,7 @@ public class ChatGameController implements Game, ChatMessageListener {
         
         ChatGameMessage response = switch (command) {
             case GetMessagesCommand ignored -> {
-                List<Message> messages = game.getMessages();
+                List<VisibleMessage> messages = game.getMessages();
                 yield new GetMessagesResponse(messages);
             }
             case SendMessageCommand sendCommand -> {
@@ -66,8 +67,18 @@ public class ChatGameController implements Game, ChatMessageListener {
                 yield null; // No response needed for send message
             }
             case GetPlayersCommand ignored -> {
-                List<String> players = game.getPlayers();
-                yield new GetPlayersResponse(players);
+                List<PlayerInfo> playerInfos = game.getPlayers();
+                yield new GetPlayersResponse(playerInfos.stream().map(PlayerInfo::screenName).sorted().toList());
+            }
+            case SetScreenNameCommand setNameCommand -> {
+                try {
+                    game.setScreenName(playerId, setNameCommand.screenName());
+                    yield null; // No response needed for set screen name
+                } catch (IllegalArgumentException e) {
+                    // Could return an error response here if needed
+                    System.err.println("Error setting screen name for player " + playerId + ": " + e.getMessage());
+                    yield null;
+                }
             }
             default -> null;
         };
@@ -95,30 +106,30 @@ public class ChatGameController implements Game, ChatMessageListener {
      */
     private void broadcastToAllPlayers(ChatGameMessage notification) {
         String serializedNotification = serializeMessage(notification);
-        List<String> players = game.getPlayers();
+        List<PlayerInfo> players = game.getPlayers();
         
-        for (String player : players) {
-            if (playerConnection.isPlayerConnected(player)) {
-                playerConnection.sendToPlayer(player, serializedNotification);
+        for (PlayerInfo player : players) {
+            if (playerConnection.isPlayerConnected(player.playerId())) {
+                playerConnection.sendToPlayer(player.playerId(), serializedNotification);
             }
         }
     }
 
     @Override
-    public void onPlayerJoinedChat(String playerId) {
-        PlayerJoinedChatNotification notification = new PlayerJoinedChatNotification(playerId);
+    public void onPlayerJoinedChat(String screenName) {
+        PlayerJoinedChatNotification notification = new PlayerJoinedChatNotification(screenName);
         broadcastToAllPlayers(notification);
     }
 
     @Override
-    public void onPlayerLeftChat(String playerId) {
-        PlayerLeftChatNotification notification = new PlayerLeftChatNotification(playerId);
+    public void onPlayerLeftChat(String screenName) {
+        PlayerLeftChatNotification notification = new PlayerLeftChatNotification(screenName);
         broadcastToAllPlayers(notification);
     }
 
     @Override
-    public void onMessageReceived(String playerId, String message) {
-        MessageReceivedNotification notification = new MessageReceivedNotification(playerId, message);
+    public void onMessageReceived(VisibleMessage visibleMessage) {
+        MessageReceivedNotification notification = new MessageReceivedNotification(visibleMessage.screenName(), visibleMessage.message());
         broadcastToAllPlayers(notification);
     }
 }

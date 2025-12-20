@@ -38,9 +38,9 @@ class ChatGameControllerTest {
         // Arrange
         String playerId = "player1";
         String jsonMessage = "{\"type\":\"getMessages\"}";
-        List<Message> expectedMessages = Arrays.asList(
-            new Message("player1", "Hello"),
-            new Message("player2", "World")
+        List<VisibleMessage> expectedMessages = Arrays.asList(
+            new VisibleMessage("player1", "Hello"),
+            new VisibleMessage("player2", "World")
         );
         when(game.getMessages()).thenReturn(expectedMessages);
 
@@ -79,7 +79,7 @@ class ChatGameControllerTest {
         // Arrange
         String playerId = "player1";
         String jsonMessage = "{\"type\":\"getPlayers\"}";
-        List<String> expectedPlayers = Arrays.asList("player1", "player2", "player3");
+        List<PlayerInfo> expectedPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(expectedPlayers);
 
         // Act
@@ -94,7 +94,7 @@ class ChatGameControllerTest {
         assertEquals(playerId, playerIdCaptor.getValue());
         String responseJson = responseCaptor.getValue();
         assertTrue(responseJson.contains("\"type\":\"getPlayersResponse\""));
-        assertTrue(responseJson.contains("\"players\""));
+        assertTrue(responseJson.contains("\"screenNames\""));
     }
 
     @Test
@@ -209,7 +209,7 @@ class ChatGameControllerTest {
         
         String responseJson = responseCaptor.getValue();
         assertTrue(responseJson.contains("\"type\":\"getPlayersResponse\""));
-        assertTrue(responseJson.contains("\"players\":[]"));
+        assertTrue(responseJson.contains("\"screenNames\":[]"));
     }
 
     @Test
@@ -255,9 +255,9 @@ class ChatGameControllerTest {
         // Arrange
         String playerId = "player1";
         String jsonMessage = "{\"type\":\"getMessages\"}";
-        Message message1 = new Message("player1", "Hello");
-        Message message2 = new Message("player2", "World");
-        List<Message> expectedMessages = Arrays.asList(message1, message2);
+        VisibleMessage message1 = new VisibleMessage("player1", "Hello");
+        VisibleMessage message2 = new VisibleMessage("player2", "World");
+        List<VisibleMessage> expectedMessages = Arrays.asList(message1, message2);
         when(game.getMessages()).thenReturn(expectedMessages);
 
         // Act
@@ -268,9 +268,9 @@ class ChatGameControllerTest {
         verify(playerConnection, times(1)).sendToPlayer(eq(playerId), responseCaptor.capture());
         
         String responseJson = responseCaptor.getValue();
-        assertTrue(responseJson.contains("\"sender\":\"player1\""));
+        assertTrue(responseJson.contains("\"screenName\":\"player1\""));
         assertTrue(responseJson.contains("\"message\":\"Hello\""));
-        assertTrue(responseJson.contains("\"sender\":\"player2\""));
+        assertTrue(responseJson.contains("\"screenName\":\"player2\""));
         assertTrue(responseJson.contains("\"message\":\"World\""));
     }
 
@@ -278,14 +278,14 @@ class ChatGameControllerTest {
     void onPlayerJoinedChat_broadcastsNotificationToAllConnectedPlayers() {
         // Arrange
         String joinedPlayerId = "player2";
-        List<String> allPlayers = Arrays.asList("player1", "player2", "player3");
+        List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
         when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
         when(playerConnection.isPlayerConnected("player2")).thenReturn(true);
         when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
 
         // Act
-        controller.onPlayerJoinedChat(joinedPlayerId);
+        controller.onPlayerJoinedChat("name 2");
 
         // Assert
         verify(game, times(1)).getPlayers();
@@ -301,7 +301,7 @@ class ChatGameControllerTest {
         List<String> notifications = notificationCaptor.getAllValues();
         for (String notification : notifications) {
             assertTrue(notification.contains("\"type\":\"playerJoinedChatNotification\""));
-            assertTrue(notification.contains("\"playerId\":\"player2\""));
+            assertTrue(notification.contains("\"screenName\":\"name 2\""));
         }
     }
 
@@ -309,14 +309,13 @@ class ChatGameControllerTest {
     void onPlayerJoinedChat_onlySendsToConnectedPlayers() {
         // Arrange
         String joinedPlayerId = "player2";
-        List<String> allPlayers = Arrays.asList("player1", "player2", "player3");
+        List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
         when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
         when(playerConnection.isPlayerConnected("player2")).thenReturn(false);
         when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
-
         // Act
-        controller.onPlayerJoinedChat(joinedPlayerId);
+        controller.onPlayerJoinedChat("name 2");
 
         // Assert
         verify(game, times(1)).getPlayers();
@@ -332,14 +331,15 @@ class ChatGameControllerTest {
     @Test
     void onPlayerLeftChat_broadcastsNotificationToAllConnectedPlayers() {
         // Arrange
-        String leftPlayerId = "player2";
-        List<String> allPlayers = Arrays.asList("player1", "player3");
+        List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
         when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
+        when(playerConnection.isPlayerConnected("player2")).thenReturn(false);
         when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
 
+
         // Act
-        controller.onPlayerLeftChat(leftPlayerId);
+        controller.onPlayerLeftChat("name 2");
 
         // Assert
         verify(game, times(1)).getPlayers();
@@ -354,21 +354,21 @@ class ChatGameControllerTest {
         List<String> notifications = notificationCaptor.getAllValues();
         for (String notification : notifications) {
             assertTrue(notification.contains("\"type\":\"playerLeftChatNotification\""));
-            assertTrue(notification.contains("\"playerId\":\"player2\""));
+            assertTrue(notification.contains("\"screenName\":\"name 2\""));
         }
     }
 
     @Test
     void onPlayerLeftChat_onlySendsToConnectedPlayers() {
         // Arrange
-        String leftPlayerId = "player2";
-        List<String> allPlayers = Arrays.asList("player1", "player3");
+        List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
         when(playerConnection.isPlayerConnected("player1")).thenReturn(false);
-        when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
 
+        when(playerConnection.isPlayerConnected("player2")).thenReturn(false);
+        when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
         // Act
-        controller.onPlayerLeftChat(leftPlayerId);
+        controller.onPlayerLeftChat("name 2");
 
         // Assert
         verify(game, times(1)).getPlayers();
@@ -381,16 +381,15 @@ class ChatGameControllerTest {
     @Test
     void onMessageReceived_broadcastsNotificationToAllConnectedPlayers() {
         // Arrange
-        String senderPlayerId = "player1";
         String messageText = "Hello, everyone!";
-        List<String> allPlayers = Arrays.asList("player1", "player2", "player3");
+        List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
         when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
         when(playerConnection.isPlayerConnected("player2")).thenReturn(true);
         when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
 
         // Act
-        controller.onMessageReceived(senderPlayerId, messageText);
+        controller.onMessageReceived(new VisibleMessage("name 1", messageText));
 
         // Assert
         verify(game, times(1)).getPlayers();
@@ -406,7 +405,7 @@ class ChatGameControllerTest {
         List<String> notifications = notificationCaptor.getAllValues();
         for (String notification : notifications) {
             assertTrue(notification.contains("\"type\":\"messageReceivedNotification\""));
-            assertTrue(notification.contains("\"playerId\":\"player1\""));
+            assertTrue(notification.contains("\"screenName\":\"name 1\""));
             assertTrue(notification.contains("\"message\":\"Hello, everyone!\""));
         }
     }
@@ -416,14 +415,14 @@ class ChatGameControllerTest {
         // Arrange
         String senderPlayerId = "player1";
         String messageText = "Hello!";
-        List<String> allPlayers = Arrays.asList("player1", "player2", "player3");
+        List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
         when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
         when(playerConnection.isPlayerConnected("player2")).thenReturn(false);
         when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
 
         // Act
-        controller.onMessageReceived(senderPlayerId, messageText);
+        controller.onMessageReceived( new VisibleMessage(senderPlayerId, messageText));
 
         // Assert
         verify(game, times(1)).getPlayers();
@@ -441,9 +440,8 @@ class ChatGameControllerTest {
         // Arrange
         String joinedPlayerId = "player1";
         when(game.getPlayers()).thenReturn(List.of());
-
         // Act
-        controller.onPlayerJoinedChat(joinedPlayerId);
+        controller.onPlayerJoinedChat("name 1");
 
         // Assert
         verify(game, times(1)).getPlayers();
@@ -457,7 +455,7 @@ class ChatGameControllerTest {
         when(game.getPlayers()).thenReturn(List.of());
 
         // Act
-        controller.onPlayerLeftChat(leftPlayerId);
+        controller.onPlayerLeftChat("name 2");
 
         // Assert
         verify(game, times(1)).getPlayers();
@@ -472,7 +470,7 @@ class ChatGameControllerTest {
         when(game.getPlayers()).thenReturn(List.of());
 
         // Act
-        controller.onMessageReceived(senderPlayerId, messageText);
+        controller.onMessageReceived(new VisibleMessage("name 1", messageText));
 
         // Assert
         verify(game, times(1)).getPlayers();
@@ -484,13 +482,13 @@ class ChatGameControllerTest {
         // Arrange
         String senderPlayerId = "player1";
         String messageText = "Hello, \"world\"!";
-        List<String> allPlayers = Arrays.asList("player1", "player2");
+        List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
         when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
         when(playerConnection.isPlayerConnected("player2")).thenReturn(true);
 
         // Act
-        controller.onMessageReceived(senderPlayerId, messageText);
+        controller.onMessageReceived(new VisibleMessage("name 1", messageText));
 
         // Assert
         ArgumentCaptor<String> notificationCaptor = ArgumentCaptor.forClass(String.class);
@@ -499,7 +497,7 @@ class ChatGameControllerTest {
         List<String> notifications = notificationCaptor.getAllValues();
         for (String notification : notifications) {
             assertTrue(notification.contains("\"type\":\"messageReceivedNotification\""));
-            assertTrue(notification.contains("\"playerId\":\"player1\""));
+            assertTrue(notification.contains("\"screenName\":\"name 1\""));
             assertTrue(notification.contains("Hello"));
         }
     }
