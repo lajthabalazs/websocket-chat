@@ -9,7 +9,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @JsonSubTypes.Type(value = SendMessageCommand.class, name = "sendMessage"),
     @JsonSubTypes.Type(value = GetPlayersCommand.class, name = "getPlayers"),
     @JsonSubTypes.Type(value = GetMessagesResponse.class, name = "getMessagesResponse"),
-    @JsonSubTypes.Type(value = GetPlayersResponse.class, name = "getPlayersResponse")
+    @JsonSubTypes.Type(value = GetPlayersResponse.class, name = "getPlayersResponse"),
+    @JsonSubTypes.Type(value = PlayerJoinedChatNotification.class, name = "playerJoinedChatNotification"),
+    @JsonSubTypes.Type(value = PlayerLeftChatNotification.class, name = "playerLeftChatNotification"),
+    @JsonSubTypes.Type(value = MessageReceivedNotification.class, name = "messageReceivedNotification")
 })
 public interface ChatGameMessage {
 }

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
-public class ChatGameController implements Game {
+public class ChatGameController implements Game, ChatMessageListener {
 
     private final ChatGame game;
     private final PlayerConnection playerConnection;
@@ -15,6 +15,7 @@ public class ChatGameController implements Game {
     public ChatGameController(ChatGame game, PlayerConnection playerConnection) {
         this.game = game;
         this.playerConnection = playerConnection;
+        game.addListener(this);
     }
 
     /**
@@ -80,11 +81,44 @@ public class ChatGameController implements Game {
     @Override
     public void onPlayerConnected(String playerId) {
         game.addPlayer(playerId);
-
     }
 
     @Override
     public void onPlayerDisconnected(String playerId) {
         game.removePlayer(playerId);
+    }
+
+    /**
+     * Broadcasts a notification message to all connected players.
+     *
+     * @param notification the notification message to broadcast
+     */
+    private void broadcastToAllPlayers(ChatGameMessage notification) {
+        String serializedNotification = serializeMessage(notification);
+        List<String> players = game.getPlayers();
+        
+        for (String player : players) {
+            if (playerConnection.isPlayerConnected(player)) {
+                playerConnection.sendToPlayer(player, serializedNotification);
+            }
+        }
+    }
+
+    @Override
+    public void onPlayerJoinedChat(String playerId) {
+        PlayerJoinedChatNotification notification = new PlayerJoinedChatNotification(playerId);
+        broadcastToAllPlayers(notification);
+    }
+
+    @Override
+    public void onPlayerLeftChat(String playerId) {
+        PlayerLeftChatNotification notification = new PlayerLeftChatNotification(playerId);
+        broadcastToAllPlayers(notification);
+    }
+
+    @Override
+    public void onMessageReceived(String playerId, String message) {
+        MessageReceivedNotification notification = new MessageReceivedNotification(playerId, message);
+        broadcastToAllPlayers(notification);
     }
 }
