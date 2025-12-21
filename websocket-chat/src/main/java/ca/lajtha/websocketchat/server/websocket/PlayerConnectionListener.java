@@ -9,4 +9,6 @@ public interface PlayerConnectionListener {
     void playerConnected(String playerId, ChannelHandlerContext ctx);
 
     void playerDisconnected(String playerId);
+
+    void handlePlayerMessage(String playerId, String request);
 }

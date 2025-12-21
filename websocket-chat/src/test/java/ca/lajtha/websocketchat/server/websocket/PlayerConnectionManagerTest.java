@@ -1,5 +1,6 @@
 package ca.lajtha.websocketchat.server.websocket;
 
+import ca.lajtha.websocketchat.game.Game;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -7,18 +8,20 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class PlayerConnectionManagerTest {
 
     private PlayerWebsocketConnectionManager connectionManager;
+    @Mock private Game game;
     private EmbeddedChannel channel1;
     private EmbeddedChannel channel2;
 
     @BeforeEach
     void setUp() {
-        connectionManager = new PlayerWebsocketConnectionManager();
+        connectionManager = new PlayerWebsocketConnectionManager(game);
         // Create channels with a handler to get a valid context
         channel1 = new EmbeddedChannel(new ChannelInboundHandlerAdapter());
         channel2 = new EmbeddedChannel(new ChannelInboundHandlerAdapter());

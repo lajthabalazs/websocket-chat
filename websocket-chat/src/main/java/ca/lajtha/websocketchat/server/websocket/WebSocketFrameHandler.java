@@ -12,12 +12,10 @@ import java.util.UUID;
 
 public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
     private static final AttributeKey<String> PLAYER_ID_KEY = AttributeKey.valueOf("playerId");
-    
-    private final Game game;
+
     private final PlayerConnectionListener playerConnectionListener;
 
-    public WebSocketFrameHandler(Game game, PlayerConnectionListener playerConnectionListener) {
-        this.game = game;
+    public WebSocketFrameHandler(PlayerConnectionListener playerConnectionListener) {
         this.playerConnectionListener = playerConnectionListener;
     }
 
@@ -38,7 +36,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             System.out.println("Received from player " + playerId + ": " + request);
             
             // Forward message to game
-            game.handlePlayerMessage(playerId, request);
+            playerConnectionListener.handlePlayerMessage(playerId, request);
         } else {
             String message = "Unsupported frame type: " + frame.getClass().getName();
             throw new UnsupportedOperationException(message);
@@ -52,26 +50,15 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         ctx.channel().attr(PLAYER_ID_KEY).set(playerId);
         
         System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (playerId: " + playerId + ")");
-        
-        // Notify game about new player
-        game.onPlayerConnected(playerId);
         playerConnectionListener.playerConnected(playerId, ctx);
-        ctx.channel().writeAndFlush(new TextWebSocketFrame("Welcome to the WebSocket server! Your player ID: " + playerId));
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         // Get the playerId from channel attributes
         String playerId = ctx.channel().attr(PLAYER_ID_KEY).get();
+        System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (playerId: " + playerId + ")");
         playerConnectionListener.playerDisconnected(playerId);
-        
-        if (playerId != null) {
-            System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (playerId: " + playerId + ")");
-            // Notify game about player disconnection
-            game.onPlayerDisconnected(playerId);
-        } else {
-            System.out.println("Client disconnected: " + ctx.channel().remoteAddress());
-        }
     }
 
     @Override

@@ -50,7 +50,7 @@ public class WebSocketServer {
                             pipeline.addLast(new WebSocketServerProtocolHandler(config.getWebsocketPath()));
                             
                             // Custom handler for WebSocket messages
-                            WebSocketFrameHandler webSocketFrameHandler = new WebSocketFrameHandler(game, websocketConnectionManager);
+                            WebSocketFrameHandler webSocketFrameHandler = new WebSocketFrameHandler(websocketConnectionManager);
                             pipeline.addLast(webSocketFrameHandler);
                         }
                     })

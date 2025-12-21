@@ -1,5 +1,7 @@
 package ca.lajtha.websocketchat.server.websocket;
 
+import ca.lajtha.websocketchat.game.Game;
+import com.google.inject.Inject;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
@@ -11,7 +13,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PlayerWebsocketConnectionManager implements PlayerConnectionListener, PlayerMessageSender {
     private final Map<String, ChannelHandlerContext> playerChannels = new ConcurrentHashMap<>();
+    private final Game game;
 
+    @Inject
+    PlayerWebsocketConnectionManager(Game game) {
+        this.game = game;
+    }
     /**
      * Registers a player's channel.
      * 
@@ -31,6 +38,11 @@ public class PlayerWebsocketConnectionManager implements PlayerConnectionListene
     @Override
     public void playerDisconnected(String playerId) {
         playerChannels.remove(playerId);
+    }
+
+    @Override
+    public void handlePlayerMessage(String playerId, String request) {
+        game.handlePlayerMessage(playerId, request);
     }
 
     /**
