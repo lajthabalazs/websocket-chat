@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  */
 public class GameManager implements Game, PlayerMessageSender {
     
-    private final Map<String, Game> games;
+    private final Map<String, SerializedGame> games;
     private final Map<String, GameInfo> gameInfoMap;
     private final Map<String, Game> playerToGame = new ConcurrentHashMap<>();
     private final PlayerMessageSender messageSender;
@@ -37,8 +37,11 @@ public class GameManager implements Game, PlayerMessageSender {
     public String createGame(String playerId, Map<String, Object> gameParameters) {
         String gameId = "game-" + gameIdCounter++;
         ChatGameModel gameModel = new ChatGameModel();
-        ChatGame game = new ChatGame(gameModel, messageSender);
-        games.put(gameId, game);
+        ChatGame chatGame = new ChatGame(gameModel, messageSender);
+        
+        // Wrap the game with SerializedGame to ensure sequential processing
+        SerializedGame serializedGame = new SerializedGame(gameId, chatGame);
+        games.put(gameId, serializedGame);
         
         // Store game info for listing
         String gameName = gameParameters != null && gameParameters.containsKey("name") 
@@ -83,7 +86,7 @@ public class GameManager implements Game, PlayerMessageSender {
      * @throws IllegalArgumentException if the game does not exist
      */
     public void stopGame(String gameId) {
-        Game game = games.get(gameId);
+        SerializedGame game = games.remove(gameId);
         if (game == null) {
             throw new IllegalArgumentException("Game with ID " + gameId + " does not exist");
         }
@@ -97,9 +100,17 @@ public class GameManager implements Game, PlayerMessageSender {
         for (String playerId : playersToRemove) {
             removePlayerFromGame(playerId);
         }
+
+
+            // Give up to 5 seconds for pending tasks to complete
+            boolean shutdown = game.shutdown(5000);
+            if (!shutdown) {
+                System.err.println("Warning: SerializedGame executor for " + gameId + " did not shutdown gracefully, forcing shutdown");
+                game.shutdownNow();
+            }
         
         // Remove the game
-        games.remove(gameId);
+
         gameInfoMap.remove(gameId);
     }
 
