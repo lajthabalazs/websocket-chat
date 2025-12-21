@@ -1,7 +1,6 @@
 package ca.lajtha.websocketchat;
 
-import java.io.IOException;
-import java.io.InputStream;
+import com.google.inject.Inject;
 import java.util.Properties;
 
 public class PropertiesServerConfig implements ServerConfig {
@@ -12,28 +11,15 @@ public class PropertiesServerConfig implements ServerConfig {
     private final boolean socketKeepalive;
     private final int httpMaxContentLength;
 
-    public PropertiesServerConfig() {
-        Properties props = loadProperties();
-        this.port = Integer.parseInt(props.getProperty("server.port", "8080"));
-        this.httpPort = Integer.parseInt(props.getProperty("http.server.port", "8081"));
-        this.websocketPath = props.getProperty("websocket.path", "/websocket");
-        this.socketBacklog = Integer.parseInt(props.getProperty("socket.backlog", "128"));
-        this.socketKeepalive = Boolean.parseBoolean(props.getProperty("socket.keepalive", "true"));
-        this.httpMaxContentLength = Integer.parseInt(props.getProperty("http.maxContentLength", "65536"));
-    }
-
-    private Properties loadProperties() {
-        Properties props = new Properties();
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("server.properties")) {
-            if (input == null) {
-                System.err.println("Warning: server.properties not found, using default values");
-                return props;
-            }
-            props.load(input);
-        } catch (IOException e) {
-            System.err.println("Warning: Error loading server.properties, using default values: " + e.getMessage());
-        }
-        return props;
+    @Inject
+    public PropertiesServerConfig(PropertiesLoader propertiesLoader) {
+        Properties props = propertiesLoader.loadProperties();
+        this.port = propertiesLoader.getIntProperty(props, "server.port", 8080);
+        this.httpPort = propertiesLoader.getIntProperty(props, "http.server.port", 8081);
+        this.websocketPath = propertiesLoader.getProperty(props, "websocket.path", "/websocket");
+        this.socketBacklog = propertiesLoader.getIntProperty(props, "socket.backlog", 128);
+        this.socketKeepalive = propertiesLoader.getBooleanProperty(props, "socket.keepalive", true);
+        this.httpMaxContentLength = propertiesLoader.getIntProperty(props, "http.maxContentLength", 65536);
     }
 
     @Override

@@ -1,8 +1,15 @@
 package ca.lajtha.websocketchat.user;
 
+import ca.lajtha.websocketchat.PropertiesLoader;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.google.inject.Inject;
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
-import java.util.UUID;
+import java.util.Date;
+import java.util.Properties;
 
 /**
  * Manages user authentication, registration, and profile operations.
@@ -11,20 +18,46 @@ import java.util.UUID;
 public class UserManager {
     private final UserDatabase database;
     private final Argon2 argon2;
+    private final Algorithm jwtAlgorithm;
+    private final PropertiesLoader propertiesLoader;
     
     // Argon2id parameters - can be adjusted based on performance requirements
     private static final int ITERATIONS = 2;
     private static final int MEMORY = 65536; // 64 MB
     private static final int PARALLELISM = 1;
     
+    // JWT configuration
+    private static final long JWT_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+    private static final String USER_ID_CLAIM = "userId";
+    private static final String DEFAULT_JWT_SECRET = "your-secret-key-change-in-production";
+    
     /**
-     * Creates a new UserManager with the specified database.
+     * Creates a new UserManager with the specified database and properties loader.
      * 
      * @param database the UserDatabase implementation to use for data storage
+     * @param propertiesLoader the PropertiesLoader for loading configuration
      */
-    public UserManager(UserDatabase database) {
+    @Inject
+    public UserManager(UserDatabase database, PropertiesLoader propertiesLoader) {
         this.database = database;
+        this.propertiesLoader = propertiesLoader;
         this.argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
+        String jwtSecret = loadJwtSecret();
+        this.jwtAlgorithm = Algorithm.HMAC256(jwtSecret);
+    }
+    
+    /**
+     * Loads the JWT secret key from server.properties file.
+     * 
+     * @return the JWT secret key, or a default value if not found
+     */
+    private String loadJwtSecret() {
+        Properties props = propertiesLoader.loadProperties();
+        String secret = propertiesLoader.getProperty(props, "jwt.secret", DEFAULT_JWT_SECRET);
+        if (DEFAULT_JWT_SECRET.equals(secret)) {
+            System.err.println("Warning: Using default JWT secret. Please change jwt.secret in server.properties for production!");
+        }
+        return secret;
     }
     
     /**
@@ -99,9 +132,8 @@ public class UserManager {
             return null; // User not found
         }
         
-        // Generate a new token
-        String token = UUID.randomUUID().toString();
-        database.storeToken(userId, token);
+        // Generate a JWT token containing userId
+        String token = generateJwtToken(userId);
         
         return new UserLoginResponse(token, userId);
     }
@@ -121,11 +153,11 @@ public class UserManager {
     }
     
     /**
-     * Validates whether a token matches the stored token for a user.
+     * Validates a JWT token and verifies it contains the specified userId.
      * 
-     * @param userId the unique user identifier
-     * @param token the token to validate
-     * @return true if the token matches the stored token for the user, false otherwise
+     * @param userId the unique user identifier to verify
+     * @param token the JWT token to validate
+     * @return true if the token is valid and contains the matching userId, false otherwise
      */
     public boolean validateToken(String userId, String token) {
         if (userId == null || userId.trim().isEmpty()) {
@@ -135,8 +167,37 @@ public class UserManager {
             return false;
         }
         
-        String storedToken = database.getToken(userId.trim());
-        return storedToken != null && storedToken.equals(token);
+        try {
+            DecodedJWT decodedJWT = JWT.require(jwtAlgorithm)
+                    .build()
+                    .verify(token);
+            
+            String tokenUserId = decodedJWT.getClaim(USER_ID_CLAIM).asString();
+            return userId.trim().equals(tokenUserId);
+        } catch (JWTVerificationException e) {
+            // Token is invalid, expired, or malformed
+            return false;
+        }
+    }
+    
+    /**
+     * Extracts the userId from a JWT token without validating it.
+     * Use this method when you only need to read the userId from a token.
+     * 
+     * @param token the JWT token
+     * @return the userId from the token, or null if token is invalid or doesn't contain userId
+     */
+    public String getUserIdFromToken(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            DecodedJWT decodedJWT = JWT.decode(token);
+            return decodedJWT.getClaim(USER_ID_CLAIM).asString();
+        } catch (Exception e) {
+            return null;
+        }
     }
     
     /**
@@ -163,6 +224,23 @@ public class UserManager {
             // If verification fails for any reason (invalid hash format, etc.), return false
             return false;
         }
+    }
+    
+    /**
+     * Generates a JWT token containing the userId claim.
+     * 
+     * @param userId the user identifier to include in the token
+     * @return the JWT token string
+     */
+    private String generateJwtToken(String userId) {
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + JWT_EXPIRATION_MS);
+        
+        return JWT.create()
+                .withClaim(USER_ID_CLAIM, userId)
+                .withIssuedAt(now)
+                .withExpiresAt(expiration)
+                .sign(jwtAlgorithm);
     }
 }
 

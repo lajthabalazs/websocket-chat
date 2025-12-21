@@ -45,20 +45,6 @@ public class InMemoryUserDatabase implements UserDatabase {
     }
     
     @Override
-    public void storeToken(String userId, String token) {
-        UserData userData = usersById.get(userId);
-        if (userData != null) {
-            userData.setToken(token);
-        }
-    }
-    
-    @Override
-    public String getToken(String userId) {
-        UserData userData = usersById.get(userId);
-        return userData != null ? userData.token() : null;
-    }
-    
-    @Override
     public void storeProfile(String userId, UserProfile profile) {
         UserData userData = usersById.get(userId);
         if (userData != null) {
@@ -86,14 +72,12 @@ public class InMemoryUserDatabase implements UserDatabase {
         @SuppressWarnings("unused")
         private final String email;
         private final String passwordHash;
-        private String token;
         private UserProfile profile;
         
         public UserData(String userId, String email, String passwordHash) {
             this.userId = userId;
             this.email = email;
             this.passwordHash = passwordHash;
-            this.token = null;
             this.profile = null;
         }
         
@@ -103,14 +87,6 @@ public class InMemoryUserDatabase implements UserDatabase {
         
         public String passwordHash() {
             return passwordHash;
-        }
-        
-        public String token() {
-            return token;
-        }
-        
-        public void setToken(String token) {
-            this.token = token;
         }
         
         public UserProfile profile() {

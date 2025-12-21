@@ -31,22 +31,6 @@ public interface UserDatabase {
     String getUserIdByEmail(String email);
     
     /**
-     * Stores a login token for a user.
-     * 
-     * @param userId the user's unique identifier
-     * @param token the login token
-     */
-    void storeToken(String userId, String token);
-    
-    /**
-     * Retrieves the stored token for a user.
-     * 
-     * @param userId the user's unique identifier
-     * @return the stored token, or null if not found
-     */
-    String getToken(String userId);
-    
-    /**
      * Stores a user profile.
      * 
      * @param userId the user's unique identifier

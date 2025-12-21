@@ -1,8 +1,9 @@
 package ca.lajtha.websocketchat;
 
 import ca.lajtha.websocketchat.game.Game;
-import ca.lajtha.websocketchat.game.VoidGame;
 import ca.lajtha.websocketchat.game.chat.ChatGameController;
+import ca.lajtha.websocketchat.user.InMemoryUserDatabase;
+import ca.lajtha.websocketchat.user.UserDatabase;
 import ca.lajtha.websocketchat.websocket.PlayerConnection;
 import ca.lajtha.websocketchat.websocket.PlayerWebsocketConnectionManager;
 import ca.lajtha.websocketchat.websocket.WebSocketFrameHandler;
@@ -13,6 +14,12 @@ import com.google.inject.Scopes;
 public class ServerModule extends AbstractModule {
     @Override
     protected void configure() {
+        // Bind PropertiesLoader as a singleton
+        bind(PropertiesLoader.class).in(Scopes.SINGLETON);
+        
+        // Bind UserDatabase interface to InMemoryUserDatabase implementation as a singleton
+        bind(UserDatabase.class).to(InMemoryUserDatabase.class).in(Scopes.SINGLETON);
+        
         // Bind ServerConfig interface to PropertiesServerConfig implementation as a singleton
         // since it loads configuration once
         bind(ServerConfig.class).to(PropertiesServerConfig.class).asEagerSingleton();
