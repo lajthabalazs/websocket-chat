@@ -1,11 +1,12 @@
 package ca.lajtha.websocketchat.game;
 
+import ca.lajtha.websocketchat.game.chat.ChatGame;
+import ca.lajtha.websocketchat.game.chat.ChatGameModel;
 import com.google.inject.Inject;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Manages multiple games and routes messages to the appropriate game based on player assignments.
@@ -14,23 +15,104 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GameManager implements Game, PlayerMessageSender {
     
     private final Map<String, Game> games;
+    private final Map<String, GameInfo> gameInfoMap;
     private final Map<String, Game> playerToGame = new ConcurrentHashMap<>();
     private final PlayerMessageSender messageSender;
+    private int gameIdCounter = 1;
     
     @Inject
     public GameManager(PlayerMessageSender messageSender) {
-        this.games = new HashMap<>();
+        this.games = new ConcurrentHashMap<>();
+        this.gameInfoMap = new ConcurrentHashMap<>();
         this.messageSender = messageSender;
     }
 
-    public void assignPlayerToGame(String playerId, String gameId) {
-        removePlayerFromGame(playerId);
-        Game game = games.get(gameId);
-        playerToGame.put(playerId, game);
-        game.handlePlayerConnected(playerId);
+    /**
+     * Creates a new game and returns its ID.
+     * 
+     * @param playerId the ID of the player creating the game
+     * @param gameParameters parameters for the game (currently unused, reserved for future use)
+     * @return the unique game ID
+     */
+    public String createGame(String playerId, Map<String, Object> gameParameters) {
+        String gameId = "game-" + gameIdCounter++;
+        ChatGameModel gameModel = new ChatGameModel();
+        ChatGame game = new ChatGame(gameModel, messageSender);
+        games.put(gameId, game);
+        
+        // Store game info for listing
+        String gameName = gameParameters != null && gameParameters.containsKey("name") 
+            ? (String) gameParameters.get("name") 
+            : "Game " + gameId;
+        gameInfoMap.put(gameId, new GameInfo(gameId, gameName, playerId, new Date()));
+        
+        // Automatically join the creator to the game
+        joinGame(playerId, gameId);
+        
+        return gameId;
     }
 
-    public void removePlayerFromGame(String playerId) {
+    /**
+     * Joins a player to a game.
+     * 
+     * @param playerId the ID of the player joining
+     * @param gameId the ID of the game to join
+     * @throws IllegalArgumentException if the game does not exist
+     */
+    public void joinGame(String playerId, String gameId) {
+        Game game = games.get(gameId);
+        if (game == null) {
+            throw new IllegalArgumentException("Game with ID " + gameId + " does not exist");
+        }
+        assignPlayerToGame(playerId, gameId);
+    }
+
+    /**
+     * Lists all available games with their descriptions.
+     * 
+     * @return list of game descriptions
+     */
+    public List<GameInfo> listGames() {
+        return new ArrayList<>(gameInfoMap.values());
+    }
+
+    /**
+     * Stops a game and disconnects all players.
+     * 
+     * @param gameId the ID of the game to stop
+     * @throws IllegalArgumentException if the game does not exist
+     */
+    public void stopGame(String gameId) {
+        Game game = games.get(gameId);
+        if (game == null) {
+            throw new IllegalArgumentException("Game with ID " + gameId + " does not exist");
+        }
+        
+        // Disconnect all players from this game
+        List<String> playersToRemove = playerToGame.entrySet().stream()
+            .filter(entry -> entry.getValue() == game)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+        
+        for (String playerId : playersToRemove) {
+            removePlayerFromGame(playerId);
+        }
+        
+        // Remove the game
+        games.remove(gameId);
+        gameInfoMap.remove(gameId);
+    }
+
+    private void assignPlayerToGame(String playerId, String gameId) {
+        removePlayerFromGame(playerId);
+        Game game = games.get(gameId);
+        if (game != null) {
+            playerToGame.put(playerId, game);
+            game.handlePlayerConnected(playerId);
+        }
+    }
+
+    private void removePlayerFromGame(String playerId) {
         Game game = playerToGame.remove(playerId);
         if (game != null) {
             game.handlePlayerDisconnected(playerId);

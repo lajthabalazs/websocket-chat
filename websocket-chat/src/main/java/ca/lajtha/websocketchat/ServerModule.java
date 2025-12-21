@@ -1,7 +1,5 @@
 package ca.lajtha.websocketchat;
 
-import ca.lajtha.websocketchat.auth.StubTokenManager;
-import ca.lajtha.websocketchat.auth.TokenManager;
 import ca.lajtha.websocketchat.game.Game;
 import ca.lajtha.websocketchat.game.chat.ChatGame;
 import ca.lajtha.websocketchat.server.PropertiesServerConfig;
@@ -10,6 +8,7 @@ import ca.lajtha.websocketchat.user.InMemoryUserDatabase;
 import ca.lajtha.websocketchat.user.UserDatabase;
 import ca.lajtha.websocketchat.game.PlayerMessageSender;
 import ca.lajtha.websocketchat.game.ConnectionManager;
+import ca.lajtha.websocketchat.game.GameManager;
 import ca.lajtha.websocketchat.server.websocket.WebSocketFrameHandler;
 import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
 import ca.lajtha.websocketchat.server.websocket.WebsocketManager;
@@ -26,10 +25,6 @@ public class ServerModule extends AbstractModule {
         // Bind UserDatabase interface to InMemoryUserDatabase implementation as a singleton
         bind(UserDatabase.class).to(InMemoryUserDatabase.class).in(Scopes.SINGLETON);
         
-        // Bind TokenManager interface to StubTokenManager implementation as a singleton
-        // TODO: Replace StubTokenManager with real JWT token manager implementation
-        bind(TokenManager.class).to(StubTokenManager.class).in(Scopes.SINGLETON);
-        
         // Bind ServerConfig interface to PropertiesServerConfig implementation as a singleton
         // since it loads configuration once
         bind(ServerConfig.class).to(PropertiesServerConfig.class).asEagerSingleton();
@@ -39,6 +34,9 @@ public class ServerModule extends AbstractModule {
         bind(PlayerMessageSender.class).to(ConnectionManager.class);
 
         bind(Game.class).to(ChatGame.class).asEagerSingleton();
+        
+        // Bind GameManager as a singleton
+        bind(GameManager.class).in(Scopes.SINGLETON);
         
         // Bind WebsocketManager to WebsocketManagerImpl
         bind(WebsocketManager.class).to(WebsocketManagerImpl.class).in(Scopes.SINGLETON);
