@@ -31,7 +31,7 @@ public class ServerModule extends AbstractModule {
         bind(ServerConfig.class).to(PropertiesServerConfig.class).asEagerSingleton();
 
         WebsocketManagerImpl websocketManager = new WebsocketManagerImpl();
-        ConnectionManager connectionManager = new ConnectionManager(websocketManager, tokenManager);
+        ConnectionManager connectionManager = new ConnectionManager(websocketManager);
         GameManager gameManager = new GameManager(connectionManager);
         connectionManager.setGame(gameManager);
 

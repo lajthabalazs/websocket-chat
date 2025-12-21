@@ -2,8 +2,6 @@ package ca.lajtha.websocketchat.game;
 
 import ca.lajtha.websocketchat.server.websocket.MessageSender;
 import ca.lajtha.websocketchat.server.websocket.*;
-import ca.lajtha.websocketchat.user.TokenManager;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 
 import java.util.Map;
@@ -18,14 +16,11 @@ public class ConnectionManager implements MessageListener, PlayerMessageSender {
     private final Map<String, String> userIdToSocketId = new ConcurrentHashMap<>();
     private final Set<String> authenticatedSockets = ConcurrentHashMap.newKeySet();
     private Game game;
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final MessageSender messageSender;
-    private final TokenManager tokenManager;
 
     @Inject
-    public ConnectionManager(MessageSender messageSender, TokenManager tokenManager) {
+    public ConnectionManager(MessageSender messageSender) {
         this.messageSender = messageSender;
-        this.tokenManager = tokenManager;
     }
 
 
@@ -55,12 +50,6 @@ public class ConnectionManager implements MessageListener, PlayerMessageSender {
 
     @Override
     public void handlePlayerMessage(String socketId, String request) {
-        // Check if this is a token verification message
-        if (isTokenVerificationMessage(request)) {
-            handleTokenVerification(socketId, request);
-            return;
-        }
-        
         // Only allow authenticated sockets to communicate with the game
         if (!authenticatedSockets.contains(socketId)) {
             System.err.println("Rejected message from unauthenticated socket: " + socketId);
@@ -75,77 +64,6 @@ public class ConnectionManager implements MessageListener, PlayerMessageSender {
         }
         
         game.handlePlayerMessage(userId, request);
-    }
-    
-    /**
-     * Checks if the message is a token verification request.
-     */
-    private boolean isTokenVerificationMessage(String message) {
-        try {
-            TokenVerificationRequest request = objectMapper.readValue(message, TokenVerificationRequest.class);
-            return TokenVerificationRequest.MESSAGE_TYPE.equals(request.type());
-        } catch (Exception e) {
-            return false;
-        }
-    }
-    
-    /**
-     * Handles token verification message from a client.
-     */
-    private void handleTokenVerification(String socketId, String request) {
-        try {
-            TokenVerificationRequest verificationRequest = objectMapper.readValue(request, TokenVerificationRequest.class);
-            String token = verificationRequest.token();
-            
-            if (token == null || token.isEmpty()) {
-                sendTokenVerificationResponse(socketId, TokenVerificationResponse.failure("Token is required"));
-                return;
-            }
-            
-            // Use token manager to get userId from JWT
-            String userId = tokenManager.extractUserId(token);
-            
-            if (userId == null) {
-                sendTokenVerificationResponse(socketId, TokenVerificationResponse.failure("Invalid or expired token"));
-                return;
-            }
-            
-            // If socket was already authenticated with a different userId, remove old mapping
-            String oldUserId = socketIdToUserId.get(socketId);
-            if (oldUserId != null && !oldUserId.equals(userId)) {
-                userIdToSocketId.remove(oldUserId);
-                game.handlePlayerDisconnected(oldUserId);
-            }
-            
-            // Store the mapping between socketId and userId
-            socketIdToUserId.put(socketId, userId);
-            userIdToSocketId.put(userId, socketId);
-            authenticatedSockets.add(socketId);
-            
-            // Notify game that player connected (using userId)
-            game.handlePlayerConnected(userId);
-            
-            // Send success response
-            sendTokenVerificationResponse(socketId, TokenVerificationResponse.success());
-            
-        } catch (Exception e) {
-            System.err.println("Error handling token verification for socket " + socketId + ": " + e.getMessage());
-            e.printStackTrace();
-            sendTokenVerificationResponse(socketId, TokenVerificationResponse.failure("Error processing token verification"));
-        }
-    }
-    
-    /**
-     * Sends a token verification response to the client.
-     */
-    private void sendTokenVerificationResponse(String socketId, TokenVerificationResponse response) {
-        try {
-            String responseJson = objectMapper.writeValueAsString(response);
-            sendToPlayer(socketId, responseJson);
-        } catch (Exception e) {
-            System.err.println("Error sending token verification response to socket " + socketId + ": " + e.getMessage());
-            e.printStackTrace();
-        }
     }
 
     /**

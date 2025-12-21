@@ -1,0 +1,106 @@
+package ca.lajtha.websocketchat.server.websocket;
+
+import ca.lajtha.websocketchat.user.TokenManager;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpUtil;
+import io.netty.util.AttributeKey;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Handles WebSocket handshake authentication by reading the authToken cookie
+ * from the HTTP upgrade request and validating it before the WebSocket connection is established.
+ */
+public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
+    private static final AttributeKey<String> USER_ID_KEY = AttributeKey.valueOf("userId");
+    private static final Pattern COOKIE_PATTERN = Pattern.compile("authToken=([^;\\s]+)");
+    
+    private final TokenManager tokenManager;
+    
+    public WebSocketHandshakeHandler(TokenManager tokenManager) {
+        this.tokenManager = tokenManager;
+    }
+    
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (msg instanceof FullHttpRequest) {
+            FullHttpRequest request = (FullHttpRequest) msg;
+            
+            // Check if this is a WebSocket upgrade request
+            String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
+            if ("websocket".equalsIgnoreCase(upgradeHeader)) {
+                // Extract cookie from request
+                String cookieHeader = request.headers().get(HttpHeaderNames.COOKIE);
+                String token = extractTokenFromCookie(cookieHeader);
+                
+                if (token == null || token.isEmpty()) {
+                    // No token found, reject the handshake
+                    System.err.println("WebSocket handshake rejected: No authToken cookie found");
+                    ctx.writeAndFlush(createUnauthorizedResponse(request));
+                    return;
+                }
+                
+                // Validate token and extract userId
+                String userId = tokenManager.extractUserId(token);
+                
+                if (userId == null) {
+                    // Invalid token, reject the handshake
+                    System.err.println("WebSocket handshake rejected: Invalid or expired token");
+                    ctx.writeAndFlush(createUnauthorizedResponse(request));
+                    return;
+                }
+                
+                // Store userId in channel attributes for later use
+                ctx.channel().attr(USER_ID_KEY).set(userId);
+                System.out.println("WebSocket handshake authenticated for userId: " + userId);
+            }
+        }
+        
+        // Pass the message to the next handler
+        super.channelRead(ctx, msg);
+    }
+    
+    /**
+     * Extracts the authToken value from the Cookie header.
+     */
+    private String extractTokenFromCookie(String cookieHeader) {
+        if (cookieHeader == null || cookieHeader.isEmpty()) {
+            return null;
+        }
+        
+        Matcher matcher = COOKIE_PATTERN.matcher(cookieHeader);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Creates an HTTP 401 Unauthorized response to reject the handshake.
+     */
+    private FullHttpResponse createUnauthorizedResponse(FullHttpRequest request) {
+        FullHttpResponse response = new DefaultFullHttpResponse(
+                request.protocolVersion(),
+                HttpResponseStatus.UNAUTHORIZED
+        );
+        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
+        HttpUtil.setKeepAlive(response, false);
+        return response;
+    }
+    
+    /**
+     * Gets the userId attribute key for accessing stored userId in channel attributes.
+     */
+    public static AttributeKey<String> getUserIdKey() {
+        return USER_ID_KEY;
+    }
+}
+

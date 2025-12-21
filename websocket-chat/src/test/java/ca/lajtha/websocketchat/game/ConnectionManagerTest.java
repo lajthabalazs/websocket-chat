@@ -1,7 +1,6 @@
 package ca.lajtha.websocketchat.game;
 
 import ca.lajtha.websocketchat.server.websocket.MessageSender;
-import ca.lajtha.websocketchat.server.websocket.TokenVerificationRequest;
 import ca.lajtha.websocketchat.user.TokenManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +24,7 @@ class ConnectionManagerTest {
 
     @BeforeEach
     void setUp() {
-        connectionManager = new ConnectionManager(messageSender, tokenManager);
+        connectionManager = new ConnectionManager(messageSender);
         connectionManager.setGame(game);
         objectMapper = new ObjectMapper();
     }
@@ -67,88 +66,6 @@ class ConnectionManagerTest {
         verify(messageSender).sendMessage(eq(socketId), eq(message));
     }
 
-    @Test
-    void handlePlayerMessage_withValidTokenVerification_authenticatesPlayer() throws Exception {
-        // Arrange
-        String socketId = "socket1";
-        String token = "valid-jwt-token";
-        String userId = "user123";
-        String tokenVerificationJson = objectMapper.writeValueAsString(
-            new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, token));
-        
-        when(tokenManager.extractUserId(token)).thenReturn(userId);
-        connectionManager.playerConnected(socketId);
-
-        // Act
-        connectionManager.handlePlayerMessage(socketId, tokenVerificationJson);
-
-        // Assert
-        assertTrue(connectionManager.isAuthenticated(socketId));
-        assertEquals(userId, connectionManager.getUserId(socketId));
-        assertEquals(socketId, connectionManager.getSocketId(userId));
-        verify(game).handlePlayerConnected(userId);
-        
-        // Verify response was sent
-        ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        verify(messageSender).sendMessage(socketIdCaptor.capture(), messageCaptor.capture());
-        assertEquals(socketId, socketIdCaptor.getValue());
-        String responseJson = messageCaptor.getValue();
-        assertTrue(responseJson.contains("\"success\":true"));
-    }
-
-    @Test
-    void handlePlayerMessage_withInvalidToken_doesNotAuthenticatePlayer() throws Exception {
-        // Arrange
-        String socketId = "socket1";
-        String token = "invalid-token";
-        String tokenVerificationJson = objectMapper.writeValueAsString(
-            new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, token));
-        
-        when(tokenManager.extractUserId(token)).thenReturn(null);
-        connectionManager.playerConnected(socketId);
-
-        // Act
-        connectionManager.handlePlayerMessage(socketId, tokenVerificationJson);
-
-        // Assert
-        assertFalse(connectionManager.isAuthenticated(socketId));
-        assertNull(connectionManager.getUserId(socketId));
-        verify(game, never()).handlePlayerConnected(anyString());
-        
-        // Verify failure response was sent
-        ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        verify(messageSender).sendMessage(socketIdCaptor.capture(), messageCaptor.capture());
-        assertEquals(socketId, socketIdCaptor.getValue());
-        String responseJson = messageCaptor.getValue();
-        assertTrue(responseJson.contains("\"success\":false"));
-    }
-
-    @Test
-    void handlePlayerMessage_withEmptyToken_doesNotAuthenticatePlayer() throws Exception {
-        // Arrange
-        String socketId = "socket1";
-        String tokenVerificationJson = objectMapper.writeValueAsString(
-            new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, ""));
-        
-        connectionManager.playerConnected(socketId);
-
-        // Act
-        connectionManager.handlePlayerMessage(socketId, tokenVerificationJson);
-
-        // Assert
-        assertFalse(connectionManager.isAuthenticated(socketId));
-        verify(game, never()).handlePlayerConnected(anyString());
-        
-        // Verify failure response was sent
-        ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        verify(messageSender).sendMessage(socketIdCaptor.capture(), messageCaptor.capture());
-        assertEquals(socketId, socketIdCaptor.getValue());
-        String responseJson = messageCaptor.getValue();
-        assertTrue(responseJson.contains("\"success\":false"));
-    }
 
     @Test
     void handlePlayerMessage_withoutAuthentication_rejectsGameMessage() throws Exception {
@@ -165,35 +82,6 @@ class ConnectionManagerTest {
         verify(game, never()).handlePlayerMessage(anyString(), anyString());
     }
 
-    @Test
-    void handlePlayerMessage_withAuthentication_forwardsToGameWithUserId() throws Exception {
-        // Arrange
-        String socketId = "socket1";
-        String userId = "user123";
-        String token = "valid-token";
-        String gameMessage = "{\"type\":\"getMessages\"}";
-        
-        when(tokenManager.extractUserId(token)).thenReturn(userId);
-        connectionManager.playerConnected(socketId);
-        
-        // Authenticate first
-        String tokenVerificationJson = objectMapper.writeValueAsString(
-            new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, token));
-        connectionManager.handlePlayerMessage(socketId, tokenVerificationJson);
-        // Clear the auth response verification
-        verify(messageSender).sendMessage(eq(socketId), anyString());
-        reset(messageSender);
-
-        // Act
-        connectionManager.handlePlayerMessage(socketId, gameMessage);
-
-        // Assert
-        ArgumentCaptor<String> userIdCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        verify(game).handlePlayerMessage(userIdCaptor.capture(), messageCaptor.capture());
-        assertEquals(userId, userIdCaptor.getValue());
-        assertEquals(gameMessage, messageCaptor.getValue());
-    }
 
     @Test
     void sendToPlayer_withUserId_translatesToSocketId() {
@@ -205,18 +93,7 @@ class ConnectionManagerTest {
         
         when(tokenManager.extractUserId(token)).thenReturn(userId);
         connectionManager.playerConnected(socketId);
-        
-        // Authenticate
-        try {
-            String tokenVerificationJson = objectMapper.writeValueAsString(
-                new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, token));
-            connectionManager.handlePlayerMessage(socketId, tokenVerificationJson);
-            // Clear the auth response verification
-            verify(messageSender).sendMessage(eq(socketId), anyString());
-            reset(messageSender);
-        } catch (Exception e) {
-            fail("Failed to authenticate socket", e);
-        }
+
 
         // Act
         boolean sent = connectionManager.sendToPlayer(userId, message);
@@ -239,18 +116,7 @@ class ConnectionManagerTest {
         
         when(tokenManager.extractUserId(token)).thenReturn(userId);
         connectionManager.playerConnected(socketId);
-        
-        // Authenticate
-        try {
-            String tokenVerificationJson = objectMapper.writeValueAsString(
-                new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, token));
-            connectionManager.handlePlayerMessage(socketId, tokenVerificationJson);
-            // Clear the auth response verification
-            verify(messageSender).sendMessage(eq(socketId), anyString());
-            reset(messageSender);
-        } catch (Exception e) {
-            fail("Failed to authenticate socket", e);
-        }
+
 
         // Act
         connectionManager.playerDisconnected(socketId);
@@ -289,18 +155,6 @@ class ConnectionManagerTest {
         when(tokenManager.extractUserId(token2)).thenReturn(userId2);
         connectionManager.playerConnected(socketId);
 
-        // Authenticate with first token
-        String tokenVerificationJson1 = objectMapper.writeValueAsString(
-            new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, token1));
-        connectionManager.handlePlayerMessage(socketId, tokenVerificationJson1);
-        // Clear the auth response verification
-        verify(messageSender).sendMessage(eq(socketId), anyString());
-        reset(messageSender);
-        
-        // Act - Re-authenticate with different token
-        String tokenVerificationJson2 = objectMapper.writeValueAsString(
-            new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, token2));
-        connectionManager.handlePlayerMessage(socketId, tokenVerificationJson2);
 
         // Assert
         assertEquals(userId2, connectionManager.getUserId(socketId));
