@@ -1,7 +1,7 @@
-package ca.lajtha.websocketchat.connection;
+package ca.lajtha.websocketchat.game;
 
 import ca.lajtha.websocketchat.auth.TokenManager;
-import ca.lajtha.websocketchat.game.Game;
+import ca.lajtha.websocketchat.server.websocket.MessageSender;
 import ca.lajtha.websocketchat.server.websocket.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
@@ -11,8 +11,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages player connections and allows sending messages to players.
- * Handles JWT token verification and translates between socketId and userId.
+ * Handles control messages related to authentication and authorization.
  */
 public class ConnectionManager implements PlayerConnectionListener, PlayerMessageSender {
     private final Map<String, String> socketIdToUserId = new ConcurrentHashMap<>();
@@ -41,7 +40,7 @@ public class ConnectionManager implements PlayerConnectionListener, PlayerMessag
             var userId = socketIdToUserId.remove(socketId);
             userIdToSocketId.remove(userId);
             authenticatedSockets.remove(socketId);
-            game.onPlayerDisconnected(userId);
+            game.handlePlayerDisconnected(userId);
         }
     }
 
@@ -106,7 +105,7 @@ public class ConnectionManager implements PlayerConnectionListener, PlayerMessag
             String oldUserId = socketIdToUserId.get(socketId);
             if (oldUserId != null && !oldUserId.equals(userId)) {
                 userIdToSocketId.remove(oldUserId);
-                game.onPlayerDisconnected(oldUserId);
+                game.handlePlayerDisconnected(oldUserId);
             }
             
             // Store the mapping between socketId and userId
@@ -115,7 +114,7 @@ public class ConnectionManager implements PlayerConnectionListener, PlayerMessag
             authenticatedSockets.add(socketId);
             
             // Notify game that player connected (using userId)
-            game.onPlayerConnected(userId);
+            game.handlePlayerConnected(userId);
             
             // Send success response
             sendTokenVerificationResponse(socketId, TokenVerificationResponse.success());

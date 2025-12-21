@@ -1,81 +1,136 @@
 package ca.lajtha.websocketchat.game.chat;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import ca.lajtha.websocketchat.game.chat.messages.*;
+import ca.lajtha.websocketchat.game.PlayerMessageSender;
+import ca.lajtha.websocketchat.game.Game;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
+
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
-public class ChatGame {
-    final Set<String> players = new HashSet<>();
-    final Map<String, String> playerScreenNames = new HashMap<>(); // playerId -> screenName
-    final List<StoredMessage> messages = new ArrayList<>();
-    private final List<ChatMessageListener> listeners = new CopyOnWriteArrayList<>();
+public class ChatGame implements Game, ChatMessageListener {
 
-    public void addListener(ChatMessageListener listener) {
-        if (listener != null) {
-            listeners.add(listener);
+    private final ChatGameModel game;
+    private final PlayerMessageSender playerConnection;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Inject
+    public ChatGame(ChatGameModel game, PlayerMessageSender playerConnection) {
+        this.game = game;
+        this.playerConnection = playerConnection;
+        game.addListener(this);
+    }
+
+    /**
+     * Deserializes a JSON message string into one of the game message commands.
+     * Expected JSON formats:
+     * - Get messages: {"type": "getMessages"}
+     * - Send message: {"type": "sendMessage", "message": "message text"}
+     * - Get players: {"type": "getPlayers"}
+     * - Set screen name: {"type": "setScreenName", "screenName": "name"}
+     *
+     * @param jsonMessage the JSON string to deserialize
+     * @return the deserialized ChatGameMessage command
+     * @throws IllegalArgumentException if the JSON format is invalid or the type is unknown
+     */
+    private ChatGameMessage deserializeMessage(String jsonMessage) {
+        try {
+            return objectMapper.readValue(jsonMessage, ChatGameMessage.class);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalArgumentException("Invalid JSON format: " + e.getMessage(), e);
         }
     }
 
-    public void removeListener(ChatMessageListener listener) {
-        listeners.remove(listener);
-    }
-
-    public void addPlayer(String playerId) {
-        players.add(playerId);
-        // Set default screen name if not already set
-        if (!playerScreenNames.containsKey(playerId)) {
-            playerScreenNames.put(playerId, playerId);
-        }
-        notifyPlayerJoined(playerId);
-    }
-
-    public void removePlayer(String playerId) {
-        players.remove(playerId);
-        notifyPlayerLeft(playerId);
-    }
-
-    public List<PlayerInfo> getPlayers() {
-        return players.stream().map(playerId -> new PlayerInfo(playerId, playerScreenNames.getOrDefault(playerId, playerId))).sorted().toList();
-    }
-
-    public void addMessage(String playerId, String text) {
-        StoredMessage storedMessage = new StoredMessage(playerId, text);
-        messages.add(storedMessage);
-        notifyMessageReceived(storedMessage);
-    }
-
-    public void setScreenName(String playerId, String screenName) {
-        if (screenName == null || screenName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Screen name cannot be null or empty");
-        }
-        playerScreenNames.put(playerId, screenName);
-    }
-
-    public List<VisibleMessage> getMessages() {
-        return messages.stream().map(storedMessage -> new VisibleMessage(playerScreenNames.getOrDefault(storedMessage.playerId(), storedMessage.playerId()), storedMessage.message())).toList();
-    }
-
-    private void notifyPlayerJoined(String playerId) {
-        for (ChatMessageListener listener : listeners) {
-            listener.onPlayerJoinedChat(playerScreenNames.getOrDefault(playerId, playerId));
+    /**
+     * Serializes a ChatGameMessage to JSON string.
+     *
+     * @param message the message to serialize
+     * @return the JSON string representation
+     * @throws IllegalArgumentException if serialization fails
+     */
+    private String serializeMessage(ChatGameMessage message) {
+        try {
+            return objectMapper.writeValueAsString(message);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalArgumentException("Failed to serialize message: " + e.getMessage(), e);
         }
     }
 
-    private void notifyPlayerLeft(String playerId) {
-        for (ChatMessageListener listener : listeners) {
-            listener.onPlayerLeftChat(playerScreenNames.getOrDefault(playerId, playerId));
+    @Override
+    public void handlePlayerMessage(String playerId, String message) {
+        ChatGameMessage command = deserializeMessage(message);
+        
+        ChatGameMessage response = switch (command) {
+            case GetMessagesCommand ignored -> {
+                List<VisibleMessage> messages = game.getMessages();
+                yield new GetMessagesResponse(messages);
+            }
+            case SendMessageCommand sendCommand -> {
+                game.addMessage(playerId, sendCommand.message());
+                yield null; // No response needed for send message
+            }
+            case GetPlayersCommand ignored -> {
+                List<PlayerInfo> playerInfos = game.getPlayers();
+                yield new GetPlayersResponse(playerInfos.stream().map(PlayerInfo::screenName).sorted().toList());
+            }
+            case SetScreenNameCommand setNameCommand -> {
+                try {
+                    game.setScreenName(playerId, setNameCommand.screenName());
+                    yield null; // No response needed for set screen name
+                } catch (IllegalArgumentException e) {
+                    // Could return an error response here if needed
+                    System.err.println("Error setting screen name for player " + playerId + ": " + e.getMessage());
+                    yield null;
+                }
+            }
+            default -> null;
+        };
+        
+        if (response != null) {
+            String serializedResponse = serializeMessage(response);
+            playerConnection.sendToPlayer(playerId, serializedResponse);
         }
     }
 
-    private void notifyMessageReceived(StoredMessage storedMessage) {
-        VisibleMessage visibleMessage = new VisibleMessage(playerScreenNames.getOrDefault(storedMessage.playerId(), storedMessage.playerId()), storedMessage.message());
-        for (ChatMessageListener listener : listeners) {
+    @Override
+    public void handlePlayerConnected(String playerId) {
+        game.addPlayer(playerId);
+    }
 
-            listener.onMessageReceived(visibleMessage);
+    @Override
+    public void handlePlayerDisconnected(String playerId) {
+        game.removePlayer(playerId);
+    }
+
+    /**
+     * Broadcasts a notification message to all connected players.
+     *
+     * @param notification the notification message to broadcast
+     */
+    private void broadcastToAllPlayers(ChatGameMessage notification) {
+        String serializedNotification = serializeMessage(notification);
+        List<PlayerInfo> players = game.getPlayers();
+        
+        for (PlayerInfo player : players) {
+            playerConnection.sendToPlayer(player.playerId(), serializedNotification);
         }
+    }
+
+    @Override
+    public void onPlayerJoinedChat(String screenName) {
+        PlayerJoinedChatNotification notification = new PlayerJoinedChatNotification(screenName);
+        broadcastToAllPlayers(notification);
+    }
+
+    @Override
+    public void onPlayerLeftChat(String screenName) {
+        PlayerLeftChatNotification notification = new PlayerLeftChatNotification(screenName);
+        broadcastToAllPlayers(notification);
+    }
+
+    @Override
+    public void onMessageReceived(VisibleMessage visibleMessage) {
+        MessageReceivedNotification notification = new MessageReceivedNotification(visibleMessage.screenName(), visibleMessage.message());
+        broadcastToAllPlayers(notification);
     }
 }

@@ -1,4 +1,4 @@
-package ca.lajtha.websocketchat.game.chat;
+package ca.lajtha.websocketchat.game.chat.messages;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

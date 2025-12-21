@@ -14,13 +14,13 @@ public interface Game {
      * 
      * @param playerId the unique identifier of the player that connected
      */
-    void onPlayerConnected(String playerId);
+    void handlePlayerConnected(String playerId);
     
     /**
      * Called when a player disconnects from the game.
      * 
      * @param playerId the unique identifier of the player that disconnected
      */
-    void onPlayerDisconnected(String playerId);
+    void handlePlayerDisconnected(String playerId);
 }
 

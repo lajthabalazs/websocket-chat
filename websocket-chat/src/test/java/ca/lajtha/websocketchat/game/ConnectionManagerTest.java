@@ -1,7 +1,6 @@
-package ca.lajtha.websocketchat.connection;
+package ca.lajtha.websocketchat.game;
 
 import ca.lajtha.websocketchat.auth.TokenManager;
-import ca.lajtha.websocketchat.game.Game;
 import ca.lajtha.websocketchat.server.websocket.MessageSender;
 import ca.lajtha.websocketchat.server.websocket.TokenVerificationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -86,7 +85,7 @@ class ConnectionManagerTest {
         assertTrue(connectionManager.isAuthenticated(socketId));
         assertEquals(userId, connectionManager.getUserId(socketId));
         assertEquals(socketId, connectionManager.getSocketId(userId));
-        verify(game).onPlayerConnected(userId);
+        verify(game).handlePlayerConnected(userId);
         
         // Verify response was sent
         ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
@@ -114,7 +113,7 @@ class ConnectionManagerTest {
         // Assert
         assertFalse(connectionManager.isAuthenticated(socketId));
         assertNull(connectionManager.getUserId(socketId));
-        verify(game, never()).onPlayerConnected(anyString());
+        verify(game, never()).handlePlayerConnected(anyString());
         
         // Verify failure response was sent
         ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
@@ -140,7 +139,7 @@ class ConnectionManagerTest {
         // Assert
         assertFalse(connectionManager.isAuthenticated(socketId));
         verify(tokenManager, never()).getUserIdFromToken(anyString());
-        verify(game, never()).onPlayerConnected(anyString());
+        verify(game, never()).handlePlayerConnected(anyString());
         
         // Verify failure response was sent
         ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
@@ -258,7 +257,7 @@ class ConnectionManagerTest {
 
         // Assert
         ArgumentCaptor<String> userIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(game).onPlayerDisconnected(userIdCaptor.capture());
+        verify(game).handlePlayerDisconnected(userIdCaptor.capture());
         assertEquals(userId, userIdCaptor.getValue());
         assertFalse(connectionManager.isAuthenticated(socketId));
         assertNull(connectionManager.getUserId(socketId));
@@ -274,7 +273,7 @@ class ConnectionManagerTest {
         connectionManager.playerDisconnected(socketId);
 
         // Assert
-        verify(game, never()).onPlayerDisconnected(anyString());
+        verify(game, never()).handlePlayerDisconnected(anyString());
     }
 
     @Test
@@ -307,8 +306,8 @@ class ConnectionManagerTest {
         assertEquals(userId2, connectionManager.getUserId(socketId));
         assertEquals(socketId, connectionManager.getSocketId(userId2));
         assertNull(connectionManager.getSocketId(userId1)); // Old mapping should be removed
-        verify(game).onPlayerDisconnected(userId1); // Old user should be disconnected
-        verify(game).onPlayerConnected(userId2); // New user should be connected
+        verify(game).handlePlayerDisconnected(userId1); // Old user should be disconnected
+        verify(game).handlePlayerConnected(userId2); // New user should be connected
     }
 
     @Test

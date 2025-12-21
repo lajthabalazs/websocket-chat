@@ -1,4 +1,4 @@
-package ca.lajtha.websocketchat.server.websocket;
+package ca.lajtha.websocketchat.game;
 
 /**
  * Interface for sending messages to players.

@@ -1,6 +1,8 @@
 package ca.lajtha.websocketchat.game.chat;
 
-import ca.lajtha.websocketchat.server.websocket.PlayerMessageSender;
+import ca.lajtha.websocketchat.game.chat.messages.PlayerInfo;
+import ca.lajtha.websocketchat.game.chat.messages.SendMessageCommand;
+import ca.lajtha.websocketchat.game.PlayerMessageSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,17 +21,17 @@ import static org.mockito.Mockito.*;
 class ChatGameControllerTest {
 
     @Mock
-    private ChatGame game;
+    private ChatGameModel game;
 
     @Mock
     private PlayerMessageSender playerConnection;
 
-    private ChatGameController controller;
+    private ChatGame controller;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        controller = new ChatGameController(game, playerConnection);
+        controller = new ChatGame(game, playerConnection);
         objectMapper = new ObjectMapper();
     }
 
@@ -213,24 +215,24 @@ class ChatGameControllerTest {
     }
 
     @Test
-    void onPlayerConnected_addsPlayerToGame() {
+    void handlePlayerConnected_addsPlayerToGame() {
         // Arrange
         String playerId = "player1";
 
         // Act
-        controller.onPlayerConnected(playerId);
+        controller.handlePlayerConnected(playerId);
 
         // Assert
         verify(game, times(1)).addPlayer(playerId);
     }
 
     @Test
-    void onPlayerDisconnected_removesPlayerFromGame() {
+    void handlePlayerDisconnected_removesPlayerFromGame() {
         // Arrange
         String playerId = "player1";
 
         // Act
-        controller.onPlayerDisconnected(playerId);
+        controller.handlePlayerDisconnected(playerId);
 
         // Assert
         verify(game, times(1)).removePlayer(playerId);

@@ -3,13 +3,13 @@ package ca.lajtha.websocketchat;
 import ca.lajtha.websocketchat.auth.StubTokenManager;
 import ca.lajtha.websocketchat.auth.TokenManager;
 import ca.lajtha.websocketchat.game.Game;
-import ca.lajtha.websocketchat.game.chat.ChatGameController;
+import ca.lajtha.websocketchat.game.chat.ChatGame;
 import ca.lajtha.websocketchat.server.PropertiesServerConfig;
 import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.user.InMemoryUserDatabase;
 import ca.lajtha.websocketchat.user.UserDatabase;
-import ca.lajtha.websocketchat.server.websocket.PlayerMessageSender;
-import ca.lajtha.websocketchat.connection.ConnectionManager;
+import ca.lajtha.websocketchat.game.PlayerMessageSender;
+import ca.lajtha.websocketchat.game.ConnectionManager;
 import ca.lajtha.websocketchat.server.websocket.WebSocketFrameHandler;
 import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
 import ca.lajtha.websocketchat.server.websocket.WebsocketManager;
@@ -38,7 +38,7 @@ public class ServerModule extends AbstractModule {
 
         bind(PlayerMessageSender.class).to(ConnectionManager.class);
 
-        bind(Game.class).to(ChatGameController.class).asEagerSingleton();
+        bind(Game.class).to(ChatGame.class).asEagerSingleton();
         
         // Bind WebsocketManager to WebsocketManagerImpl
         bind(WebsocketManager.class).to(WebsocketManagerImpl.class).in(Scopes.SINGLETON);

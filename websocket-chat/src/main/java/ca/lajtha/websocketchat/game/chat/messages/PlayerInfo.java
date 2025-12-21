@@ -1,4 +1,4 @@
-package ca.lajtha.websocketchat.game.chat;
+package ca.lajtha.websocketchat.game.chat.messages;
 
 public record PlayerInfo(String playerId, String screenName) implements Comparable<PlayerInfo>{
     @Override
@@ -10,5 +10,6 @@ public record PlayerInfo(String playerId, String screenName) implements Comparab
         }
     }
 }
+
 
 
