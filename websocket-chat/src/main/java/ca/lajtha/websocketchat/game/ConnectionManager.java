@@ -36,6 +36,47 @@ public class ConnectionManager implements MessageListener, PlayerMessageSender {
     @Override
     public void playerConnected(String socketId) {
         // TODO do nothing for now
+        // Authentication happens at WebSocket handshake level
+        // The socketId-to-userId mapping should be set when the connection is authenticated
+    }
+    
+    /**
+     * Authenticates a socket with a userId.
+     * This method is used to establish the mapping between socketId and userId.
+     * 
+     * @param socketId the socket identifier
+     * @param userId the user identifier
+     */
+    public void authenticateSocket(String socketId, String userId) {
+        if (socketId == null || userId == null) {
+            return;
+        }
+        
+        // If this socket was already authenticated with a different userId, disconnect the old user
+        String oldUserId = socketIdToUserId.get(socketId);
+        if (oldUserId != null && !oldUserId.equals(userId)) {
+            userIdToSocketId.remove(oldUserId);
+            if (game != null) {
+                game.handlePlayerDisconnected(oldUserId);
+            }
+        }
+        
+        // If this userId is already mapped to a different socket, remove the old mapping
+        String oldSocketId = userIdToSocketId.get(userId);
+        if (oldSocketId != null && !oldSocketId.equals(socketId)) {
+            socketIdToUserId.remove(oldSocketId);
+            authenticatedSockets.remove(oldSocketId);
+        }
+        
+        // Establish new mappings
+        socketIdToUserId.put(socketId, userId);
+        userIdToSocketId.put(userId, socketId);
+        authenticatedSockets.add(socketId);
+        
+        // Notify game of new connection
+        if (game != null) {
+            game.handlePlayerConnected(userId);
+        }
     }
 
     @Override

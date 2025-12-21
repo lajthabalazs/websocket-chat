@@ -20,6 +20,7 @@ import static org.mockito.Mockito.*;
 class WebSocketFrameHandlerTest {
 
     private static final AttributeKey<String> SOCKET_ID_KEY = AttributeKey.valueOf("socketId");
+    private static final AttributeKey<String> USER_ID_KEY = WebSocketHandshakeHandler.getUserIdKey();
 
     @Mock
     private ConnectionManager websocketConnectionManager;
@@ -33,7 +34,14 @@ class WebSocketFrameHandlerTest {
         websocketManager = new WebsocketManagerImpl();
         websocketManager.addMessageListener(websocketConnectionManager);
         handler = new WebSocketFrameHandler(websocketManager);
-        channel = new EmbeddedChannel(handler);
+        
+        // Create channel without handler first, set userId attribute, then add handler
+        // This simulates the handshake handler setting the userId before channelActive is called
+        channel = new EmbeddedChannel();
+        channel.attr(USER_ID_KEY).set("test-user-id");
+        channel.pipeline().addLast(handler);
+        // Manually trigger channelActive since we added handler after channel creation
+        channel.pipeline().fireChannelActive();
     }
 
     @AfterEach
@@ -86,8 +94,17 @@ class WebSocketFrameHandlerTest {
         
         WebSocketFrameHandler handler1 = new WebSocketFrameHandler(manager1);
         WebSocketFrameHandler handler2 = new WebSocketFrameHandler(manager2);
-        EmbeddedChannel channel1 = new EmbeddedChannel(handler1);
-        EmbeddedChannel channel2 = new EmbeddedChannel(handler2);
+        
+        // Create channels and set userId attributes before adding handlers
+        EmbeddedChannel channel1 = new EmbeddedChannel();
+        channel1.attr(USER_ID_KEY).set("test-user-1");
+        channel1.pipeline().addLast(handler1);
+        channel1.pipeline().fireChannelActive();
+        
+        EmbeddedChannel channel2 = new EmbeddedChannel();
+        channel2.attr(USER_ID_KEY).set("test-user-2");
+        channel2.pipeline().addLast(handler2);
+        channel2.pipeline().fireChannelActive();
 
         // Act - channels become active, triggering playerConnected calls
         // The playerConnected method is called automatically when channel becomes active

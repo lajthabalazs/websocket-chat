@@ -1,7 +1,7 @@
 package ca.lajtha.websocketchat.server.websocket;
 
-import ca.lajtha.websocketchat.game.ConnectionManager;
 import ca.lajtha.websocketchat.server.ServerConfig;
+import ca.lajtha.websocketchat.user.TokenManager;
 import com.google.inject.Inject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -17,11 +17,13 @@ import io.netty.handler.logging.LoggingHandler;
 public class WebSocketServer {
     private final ServerConfig config;
     private final WebsocketManager websocketManager;
+    private final TokenManager tokenManager;
 
     @Inject
-    public WebSocketServer(ServerConfig config, WebsocketManager websocketManager) {
+    public WebSocketServer(ServerConfig config, WebsocketManager websocketManager, TokenManager tokenManager) {
         this.config = config;
         this.websocketManager = websocketManager;
+        this.tokenManager = tokenManager;
     }
 
     public void start() throws InterruptedException {
@@ -43,6 +45,9 @@ public class WebSocketServer {
                             
                             // Aggregates HTTP chunks into full requests
                             pipeline.addLast(new HttpObjectAggregator(config.getHttpMaxContentLength()));
+                            
+                            // Handles WebSocket handshake authentication (must be before WebSocketServerProtocolHandler)
+                            pipeline.addLast(new WebSocketHandshakeHandler(tokenManager));
                             
                             // Handles WebSocket handshake and frames
                             pipeline.addLast(new WebSocketServerProtocolHandler(config.getWebsocketPath()));

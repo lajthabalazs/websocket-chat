@@ -1,8 +1,6 @@
 package ca.lajtha.websocketchat.game;
 
 import ca.lajtha.websocketchat.server.websocket.MessageSender;
-import ca.lajtha.websocketchat.user.TokenManager;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,14 +17,11 @@ class ConnectionManagerTest {
     private ConnectionManager connectionManager;
     @Mock private Game game;
     @Mock private MessageSender messageSender;
-    @Mock private TokenManager tokenManager;
-    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
         connectionManager = new ConnectionManager(messageSender);
         connectionManager.setGame(game);
-        objectMapper = new ObjectMapper();
     }
 
     @Test
@@ -82,18 +77,37 @@ class ConnectionManagerTest {
         verify(game, never()).handlePlayerMessage(anyString(), anyString());
     }
 
+    @Test
+    void handlePlayerMessage_withAuthentication_forwardsToGame() throws Exception {
+        // Arrange
+        String socketId = "socket1";
+        String userId = "user123";
+        String gameMessage = "{\"type\":\"getMessages\"}";
+        
+        connectionManager.playerConnected(socketId);
+        connectionManager.authenticateSocket(socketId, userId);
+
+        // Act
+        connectionManager.handlePlayerMessage(socketId, gameMessage);
+
+        // Assert
+        ArgumentCaptor<String> userIdCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(game).handlePlayerMessage(userIdCaptor.capture(), messageCaptor.capture());
+        assertEquals(userId, userIdCaptor.getValue());
+        assertEquals(gameMessage, messageCaptor.getValue());
+    }
+
 
     @Test
     void sendToPlayer_withUserId_translatesToSocketId() {
         // Arrange
         String socketId = "socket1";
         String userId = "user123";
-        String token = "valid-token";
         String message = "Test message";
         
-        when(tokenManager.extractUserId(token)).thenReturn(userId);
         connectionManager.playerConnected(socketId);
-
+        connectionManager.authenticateSocket(socketId, userId);
 
         // Act
         boolean sent = connectionManager.sendToPlayer(userId, message);
@@ -112,11 +126,9 @@ class ConnectionManagerTest {
         // Arrange
         String socketId = "socket1";
         String userId = "user123";
-        String token = "valid-token";
         
-        when(tokenManager.extractUserId(token)).thenReturn(userId);
         connectionManager.playerConnected(socketId);
-
+        connectionManager.authenticateSocket(socketId, userId);
 
         // Act
         connectionManager.playerDisconnected(socketId);
@@ -148,13 +160,12 @@ class ConnectionManagerTest {
         String socketId = "socket1";
         String userId1 = "user123";
         String userId2 = "user456";
-        String token1 = "token1";
-        String token2 = "token2";
         
-        when(tokenManager.extractUserId(token1)).thenReturn(userId1);
-        when(tokenManager.extractUserId(token2)).thenReturn(userId2);
         connectionManager.playerConnected(socketId);
+        connectionManager.authenticateSocket(socketId, userId1);
 
+        // Act - reauthenticate with different userId
+        connectionManager.authenticateSocket(socketId, userId2);
 
         // Assert
         assertEquals(userId2, connectionManager.getUserId(socketId));

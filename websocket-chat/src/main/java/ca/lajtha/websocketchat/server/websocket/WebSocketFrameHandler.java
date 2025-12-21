@@ -10,6 +10,8 @@ import java.util.UUID;
 
 public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
     private static final AttributeKey<String> SOCKET_ID_KEY = AttributeKey.valueOf("socketId");
+    // Use the same USER_ID_KEY as WebSocketHandshakeHandler
+    private static final AttributeKey<String> USER_ID_KEY = WebSocketHandshakeHandler.getUserIdKey();
 
     private final WebsocketManager websocketManager;
 
@@ -19,6 +21,14 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) {
+        // Verify authentication before processing any frames
+        String userId = ctx.channel().attr(USER_ID_KEY).get();
+        if (userId == null || userId.isEmpty()) {
+            System.err.println("Warning: Received frame from unauthenticated connection. Closing connection.");
+            ctx.close();
+            return;
+        }
+        
         if (frame instanceof TextWebSocketFrame) {
             // Handle text frames
             TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
@@ -31,7 +41,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
                 return;
             }
             
-            System.out.println("Received from socket " + socketId + ": " + request);
+            System.out.println("Received from socket " + socketId + " (userId: " + userId + "): " + request);
             
             // Forward message to game
             websocketManager.handlePlayerMessage(socketId, request);
@@ -43,11 +53,20 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        // Verify that the connection was authenticated during handshake
+        String userId = ctx.channel().attr(USER_ID_KEY).get();
+        
+        if (userId == null || userId.isEmpty()) {
+            System.err.println("WebSocket connection rejected: No authenticated userId found. Connection from: " + ctx.channel().remoteAddress());
+            ctx.close();
+            return;
+        }
+        
         // Generate a unique socketId for this connection
         String socketId = UUID.randomUUID().toString();
         ctx.channel().attr(SOCKET_ID_KEY).set(socketId);
         
-        System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ")");
+        System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ", userId: " + userId + ")");
         websocketManager.playerConnected(socketId, ctx);
     }
 
