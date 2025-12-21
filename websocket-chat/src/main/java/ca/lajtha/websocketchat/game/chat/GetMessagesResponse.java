@@ -8,3 +8,4 @@ import java.util.List;
 public record GetMessagesResponse(List<VisibleMessage> messages) implements ChatGameMessage {
 }
 
+
