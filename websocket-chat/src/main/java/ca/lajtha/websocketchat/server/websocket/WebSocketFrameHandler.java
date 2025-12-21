@@ -1,4 +1,4 @@
-package ca.lajtha.websocketchat.websocket;
+package ca.lajtha.websocketchat.server.websocket;
 
 import ca.lajtha.websocketchat.game.Game;
 import com.google.inject.Inject;

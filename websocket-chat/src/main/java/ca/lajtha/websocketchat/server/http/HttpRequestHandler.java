@@ -1,4 +1,4 @@
-package ca.lajtha.websocketchat.http;
+package ca.lajtha.websocketchat.server.http;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;

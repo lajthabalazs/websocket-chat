@@ -1,6 +1,6 @@
 package ca.lajtha.websocketchat.game.chat;
 
-import ca.lajtha.websocketchat.websocket.PlayerConnection;
+import ca.lajtha.websocketchat.server.websocket.PlayerConnection;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

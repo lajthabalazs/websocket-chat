@@ -1,7 +1,7 @@
 package ca.lajtha.websocketchat;
 
-import ca.lajtha.websocketchat.http.HttpServer;
-import ca.lajtha.websocketchat.websocket.WebSocketServer;
+import ca.lajtha.websocketchat.server.http.HttpServer;
+import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 

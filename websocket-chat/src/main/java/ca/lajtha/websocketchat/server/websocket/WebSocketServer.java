@@ -1,6 +1,7 @@
-package ca.lajtha.websocketchat.http;
+package ca.lajtha.websocketchat.server.websocket;
 
-import ca.lajtha.websocketchat.ServerConfig;
+import ca.lajtha.websocketchat.server.ServerConfig;
+import ca.lajtha.websocketchat.game.chat.ChatGameController;
 import com.google.inject.Inject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -9,15 +10,20 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
-public class HttpServer {
+public class WebSocketServer {
     private final ServerConfig config;
+    private final ChatGameController game;
+    private final PlayerWebsocketConnectionManager websocketConnectionManager;
 
     @Inject
-    public HttpServer(ServerConfig config) {
+    public WebSocketServer(ServerConfig config, PlayerWebsocketConnectionManager websocketConnectionManager, ChatGameController game) {
         this.config = config;
+        this.game = game;
+        this.websocketConnectionManager = websocketConnectionManager;
     }
 
     public void start() throws InterruptedException {
@@ -34,22 +40,26 @@ public class HttpServer {
                         protected void initChannel(SocketChannel ch) {
                             ChannelPipeline pipeline = ch.pipeline();
                             
-                            // HTTP codec for handling HTTP requests
+                            // HTTP codec for handling HTTP upgrade requests
                             pipeline.addLast(new HttpServerCodec());
                             
                             // Aggregates HTTP chunks into full requests
                             pipeline.addLast(new HttpObjectAggregator(config.getHttpMaxContentLength()));
                             
-                            // Custom handler for HTTP requests
-                            pipeline.addLast(new HttpRequestHandler());
+                            // Handles WebSocket handshake and frames
+                            pipeline.addLast(new WebSocketServerProtocolHandler(config.getWebsocketPath()));
+                            
+                            // Custom handler for WebSocket messages
+                            WebSocketFrameHandler webSocketFrameHandler = new WebSocketFrameHandler(game, websocketConnectionManager);
+                            pipeline.addLast(webSocketFrameHandler);
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, config.getSocketBacklog())
                     .childOption(ChannelOption.SO_KEEPALIVE, config.isSocketKeepalive());
 
-            ChannelFuture future = bootstrap.bind(config.getHttpPort()).sync();
-            System.out.println("HTTP server started on port " + config.getHttpPort());
-            System.out.println("Connect to: http://localhost:" + config.getHttpPort());
+            ChannelFuture future = bootstrap.bind(config.getPort()).sync();
+            System.out.println("WebSocket server started on port " + config.getPort());
+            System.out.println("Connect to: ws://localhost:" + config.getPort() + config.getWebsocketPath());
 
             future.channel().closeFuture().sync();
         } finally {
@@ -58,5 +68,4 @@ public class HttpServer {
         }
     }
 }
-
 

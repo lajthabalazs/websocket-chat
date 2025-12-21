@@ -1,5 +1,6 @@
-package ca.lajtha.websocketchat;
+package ca.lajtha.websocketchat.server;
 
+import ca.lajtha.websocketchat.PropertiesLoader;
 import com.google.inject.Inject;
 import java.util.Properties;
 

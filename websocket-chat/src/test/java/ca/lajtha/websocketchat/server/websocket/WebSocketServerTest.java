@@ -1,7 +1,9 @@
-package ca.lajtha.websocketchat.websocket;
+package ca.lajtha.websocketchat.server.websocket;
 
-import ca.lajtha.websocketchat.ServerConfig;
+import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.game.chat.ChatGameController;
+import ca.lajtha.websocketchat.server.websocket.PlayerWebsocketConnectionManager;
+import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

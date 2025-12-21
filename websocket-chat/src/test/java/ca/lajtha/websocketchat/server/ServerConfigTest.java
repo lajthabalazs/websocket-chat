@@ -1,5 +1,7 @@
-package ca.lajtha.websocketchat;
+package ca.lajtha.websocketchat.server;
 
+import ca.lajtha.websocketchat.PropertiesLoader;
+import ca.lajtha.websocketchat.server.PropertiesServerConfig;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

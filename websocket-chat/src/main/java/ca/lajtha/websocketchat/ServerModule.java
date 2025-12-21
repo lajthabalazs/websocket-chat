@@ -2,12 +2,16 @@ package ca.lajtha.websocketchat;
 
 import ca.lajtha.websocketchat.game.Game;
 import ca.lajtha.websocketchat.game.chat.ChatGameController;
+import ca.lajtha.websocketchat.server.PropertiesServerConfig;
+import ca.lajtha.websocketchat.server.ServerConfig;
+import ca.lajtha.websocketchat.server.http.HttpRequestHandler;
+import ca.lajtha.websocketchat.server.http.HttpServer;
 import ca.lajtha.websocketchat.user.InMemoryUserDatabase;
 import ca.lajtha.websocketchat.user.UserDatabase;
-import ca.lajtha.websocketchat.websocket.PlayerConnection;
-import ca.lajtha.websocketchat.websocket.PlayerWebsocketConnectionManager;
-import ca.lajtha.websocketchat.websocket.WebSocketFrameHandler;
-import ca.lajtha.websocketchat.websocket.WebSocketServer;
+import ca.lajtha.websocketchat.server.websocket.PlayerConnection;
+import ca.lajtha.websocketchat.server.websocket.PlayerWebsocketConnectionManager;
+import ca.lajtha.websocketchat.server.websocket.WebSocketFrameHandler;
+import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 
@@ -37,10 +41,10 @@ public class ServerModule extends AbstractModule {
         bind(WebSocketFrameHandler.class);
         
         // Bind HttpServer
-        bind(ca.lajtha.websocketchat.http.HttpServer.class);
+        bind(HttpServer.class);
         
         // Bind HttpRequestHandler
-        bind(ca.lajtha.websocketchat.http.HttpRequestHandler.class);
+        bind(HttpRequestHandler.class);
     }
 }
 

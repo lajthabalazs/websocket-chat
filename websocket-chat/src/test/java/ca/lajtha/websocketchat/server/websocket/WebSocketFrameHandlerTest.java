@@ -1,6 +1,8 @@
-package ca.lajtha.websocketchat.websocket;
+package ca.lajtha.websocketchat.server.websocket;
 
 import ca.lajtha.websocketchat.game.Game;
+import ca.lajtha.websocketchat.server.websocket.PlayerWebsocketConnectionManager;
+import ca.lajtha.websocketchat.server.websocket.WebSocketFrameHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
