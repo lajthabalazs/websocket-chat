@@ -1,7 +1,7 @@
 package ca.lajtha.websocketchat.server.websocket;
 
+import ca.lajtha.websocketchat.connection.ConnectionManager;
 import ca.lajtha.websocketchat.server.ServerConfig;
-import ca.lajtha.websocketchat.game.chat.ChatGameController;
 import com.google.inject.Inject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -10,18 +10,17 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
 public class WebSocketServer {
     private final ServerConfig config;
-    private final PlayerWebsocketConnectionManager websocketConnectionManager;
+    private final ConnectionManager websocketConnectionManager;
     private final WebsocketManager websocketManager;
 
     @Inject
-    public WebSocketServer(ServerConfig config, PlayerWebsocketConnectionManager websocketConnectionManager, WebsocketManager websocketManager) {
+    public WebSocketServer(ServerConfig config, ConnectionManager websocketConnectionManager, WebsocketManager websocketManager) {
         this.config = config;
         this.websocketConnectionManager = websocketConnectionManager;
         this.websocketManager = websocketManager;

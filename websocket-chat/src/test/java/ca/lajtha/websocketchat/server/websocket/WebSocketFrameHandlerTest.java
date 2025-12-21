@@ -1,5 +1,6 @@
 package ca.lajtha.websocketchat.server.websocket;
 
+import ca.lajtha.websocketchat.connection.ConnectionManager;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -21,7 +22,7 @@ class WebSocketFrameHandlerTest {
     private static final AttributeKey<String> SOCKET_ID_KEY = AttributeKey.valueOf("socketId");
 
     @Mock
-    private PlayerWebsocketConnectionManager websocketConnectionManager;
+    private ConnectionManager websocketConnectionManager;
     @Mock
     private WebsocketManager websocketManager;
     

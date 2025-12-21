@@ -1,5 +1,6 @@
 package ca.lajtha.websocketchat.server.websocket;
 
+import ca.lajtha.websocketchat.connection.ConnectionManager;
 import ca.lajtha.websocketchat.server.ServerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ class WebSocketServerTest {
     @Mock
     private WebsocketManager websocketManager;
     @Mock
-    private PlayerWebsocketConnectionManager websocketConnectionManager;
+    private ConnectionManager websocketConnectionManager;
 
     private WebSocketServer server;
 

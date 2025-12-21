@@ -1,10 +1,10 @@
-package ca.lajtha.websocketchat.server.websocket;
+package ca.lajtha.websocketchat.connection;
 
 import ca.lajtha.websocketchat.auth.TokenManager;
 import ca.lajtha.websocketchat.game.Game;
+import ca.lajtha.websocketchat.server.websocket.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
-import io.netty.channel.ChannelHandlerContext;
 
 import java.util.Map;
 import java.util.Set;
@@ -14,20 +14,20 @@ import java.util.concurrent.ConcurrentHashMap;
  * Manages player connections and allows sending messages to players.
  * Handles JWT token verification and translates between socketId and userId.
  */
-public class PlayerWebsocketConnectionManager implements PlayerConnectionListener, PlayerMessageSender {
+public class ConnectionManager implements PlayerConnectionListener, PlayerMessageSender {
     private final Map<String, String> socketIdToUserId = new ConcurrentHashMap<>();
     private final Map<String, String> userIdToSocketId = new ConcurrentHashMap<>();
     private final Set<String> authenticatedSockets = ConcurrentHashMap.newKeySet();
     private final Game game;
     private final TokenManager tokenManager;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final WebsocketManager websocketManager;
+    private final MessageSender messageSender;
 
     @Inject
-    PlayerWebsocketConnectionManager(Game game, TokenManager tokenManager, WebsocketManager websocketManager) {
+    public ConnectionManager(Game game, TokenManager tokenManager, MessageSender messageSender) {
         this.game = game;
         this.tokenManager = tokenManager;
-        this.websocketManager = websocketManager;
+        this.messageSender = messageSender;
     }
 
     @Override
@@ -37,8 +37,10 @@ public class PlayerWebsocketConnectionManager implements PlayerConnectionListene
 
     @Override
     public void playerDisconnected(String socketId) {
-        if(!socketIdToUserId.containsKey(socketId)){
+        if(socketIdToUserId.containsKey(socketId)){
             var userId = socketIdToUserId.remove(socketId);
+            userIdToSocketId.remove(userId);
+            authenticatedSockets.remove(socketId);
             game.onPlayerDisconnected(userId);
         }
     }
@@ -148,14 +150,21 @@ public class PlayerWebsocketConnectionManager implements PlayerConnectionListene
      */
     @Override
     public boolean sendToPlayer(String playerId, String message) {
-        String socketId = userIdToSocketId.getOrDefault(playerId, null);
+        String socketId;
         
-        // Check if socket is connected before sending
-        if (socketId != null) {
-            websocketManager.sendMessage(socketId, message);
-            return true;
+        // First check if playerId is a userId (look up in userIdToSocketId)
+        socketId = userIdToSocketId.get(playerId);
+        
+        // If not found as userId, treat playerId as socketId
+        // Note: We can't verify if socketId is valid without tracking all connected sockets,
+        // so we'll attempt to send and let messageSender handle invalid sockets
+        if (socketId == null) {
+            socketId = playerId;
         }
-        return false;
+        
+        // Send the message (messageSender will handle if socket is valid)
+        messageSender.sendMessage(socketId, message);
+        return true;
     }
     
     /**

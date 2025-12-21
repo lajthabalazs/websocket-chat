@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Implementation of WebsocketManager that sends messages to WebSocket connections.
  */
-public class WebsocketManagerImpl implements WebsocketManager {
+public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
     private final Map<String, ChannelHandlerContext> socketChannels;
 
     /**

@@ -9,17 +9,13 @@ import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.user.InMemoryUserDatabase;
 import ca.lajtha.websocketchat.user.UserDatabase;
 import ca.lajtha.websocketchat.server.websocket.PlayerMessageSender;
-import ca.lajtha.websocketchat.server.websocket.PlayerWebsocketConnectionManager;
+import ca.lajtha.websocketchat.connection.ConnectionManager;
 import ca.lajtha.websocketchat.server.websocket.WebSocketFrameHandler;
 import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
 import ca.lajtha.websocketchat.server.websocket.WebsocketManager;
 import ca.lajtha.websocketchat.server.websocket.WebsocketManagerImpl;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import io.netty.channel.ChannelHandlerContext;
-
-import java.util.Map;
 
 public class ServerModule extends AbstractModule {
     @Override
@@ -38,9 +34,9 @@ public class ServerModule extends AbstractModule {
         // since it loads configuration once
         bind(ServerConfig.class).to(PropertiesServerConfig.class).asEagerSingleton();
 
-        bind(PlayerWebsocketConnectionManager.class).in(Scopes.SINGLETON);
+        bind(ConnectionManager.class).in(Scopes.SINGLETON);
 
-        bind(PlayerMessageSender.class).to(PlayerWebsocketConnectionManager.class);
+        bind(PlayerMessageSender.class).to(ConnectionManager.class);
 
         bind(Game.class).to(ChatGameController.class).asEagerSingleton();
         

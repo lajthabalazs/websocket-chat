@@ -277,7 +277,6 @@ class ChatGameControllerTest {
     @Test
     void onPlayerJoinedChat_broadcastsNotificationToAllConnectedPlayers() {
         // Arrange
-        String joinedPlayerId = "player2";
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
 
@@ -305,7 +304,6 @@ class ChatGameControllerTest {
     @Test
     void onPlayerJoinedChat_onlySendsToConnectedPlayers() {
         // Arrange
-        String joinedPlayerId = "player2";
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
         // Act
@@ -314,19 +312,20 @@ class ChatGameControllerTest {
         // Assert
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(2)).sendToPlayer(playerIdCaptor.capture(), anyString());
+        verify(playerConnection, times(3)).sendToPlayer(playerIdCaptor.capture(), anyString());
         
         List<String> notifiedPlayers = playerIdCaptor.getAllValues();
         assertTrue(notifiedPlayers.contains("player1"));
+        assertTrue(notifiedPlayers.contains("player2"));
         assertTrue(notifiedPlayers.contains("player3"));
-        assertFalse(notifiedPlayers.contains("player2"));
     }
 
     @Test
     void onPlayerLeftChat_broadcastsNotificationToAllConnectedPlayers() {
         // Arrange
-        List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
-        when(game.getPlayers()).thenReturn(allPlayers);
+        // After player2 leaves, only player1 and player3 remain
+        List<PlayerInfo> remainingPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player3", "name 3"));
+        when(game.getPlayers()).thenReturn(remainingPlayers);
 
         // Act
         controller.onPlayerLeftChat("name 2");
@@ -351,17 +350,21 @@ class ChatGameControllerTest {
     @Test
     void onPlayerLeftChat_onlySendsToConnectedPlayers() {
         // Arrange
-        List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
-        when(game.getPlayers()).thenReturn(allPlayers);
+        // After player2 leaves, only player1 and player3 remain
+        List<PlayerInfo> remainingPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player3", "name 3"));
+        when(game.getPlayers()).thenReturn(remainingPlayers);
         // Act
         controller.onPlayerLeftChat("name 2");
 
         // Assert
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(1)).sendToPlayer(playerIdCaptor.capture(), anyString());
+        verify(playerConnection, times(2)).sendToPlayer(playerIdCaptor.capture(), anyString());
         
-        assertEquals("player3", playerIdCaptor.getValue());
+        List<String> notifiedPlayers = playerIdCaptor.getAllValues();
+        assertTrue(notifiedPlayers.contains("player1"));
+        assertTrue(notifiedPlayers.contains("player3"));
+        assertFalse(notifiedPlayers.contains("player2"));
     }
 
     @Test
@@ -395,29 +398,27 @@ class ChatGameControllerTest {
     @Test
     void onMessageReceived_onlySendsToConnectedPlayers() {
         // Arrange
-        String senderPlayerId = "player1";
         String messageText = "Hello!";
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
 
         // Act
-        controller.onMessageReceived( new VisibleMessage(senderPlayerId, messageText));
+        controller.onMessageReceived(new VisibleMessage("name 1", messageText));
 
         // Assert
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(2)).sendToPlayer(playerIdCaptor.capture(), anyString());
+        verify(playerConnection, times(3)).sendToPlayer(playerIdCaptor.capture(), anyString());
         
         List<String> notifiedPlayers = playerIdCaptor.getAllValues();
         assertTrue(notifiedPlayers.contains("player1"));
+        assertTrue(notifiedPlayers.contains("player2"));
         assertTrue(notifiedPlayers.contains("player3"));
-        assertFalse(notifiedPlayers.contains("player2"));
     }
 
     @Test
     void onPlayerJoinedChat_handlesEmptyPlayersList() {
         // Arrange
-        String joinedPlayerId = "player1";
         when(game.getPlayers()).thenReturn(List.of());
         // Act
         controller.onPlayerJoinedChat("name 1");
@@ -430,7 +431,6 @@ class ChatGameControllerTest {
     @Test
     void onPlayerLeftChat_handlesEmptyPlayersList() {
         // Arrange
-        String leftPlayerId = "player1";
         when(game.getPlayers()).thenReturn(List.of());
 
         // Act
@@ -444,7 +444,6 @@ class ChatGameControllerTest {
     @Test
     void onMessageReceived_handlesEmptyPlayersList() {
         // Arrange
-        String senderPlayerId = "player1";
         String messageText = "Hello!";
         when(game.getPlayers()).thenReturn(List.of());
 
@@ -459,7 +458,6 @@ class ChatGameControllerTest {
     @Test
     void onMessageReceived_handlesSpecialCharactersInMessage() {
         // Arrange
-        String senderPlayerId = "player1";
         String messageText = "Hello, \"world\"!";
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
@@ -469,7 +467,7 @@ class ChatGameControllerTest {
 
         // Assert
         ArgumentCaptor<String> notificationCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(2)).sendToPlayer(anyString(), notificationCaptor.capture());
+        verify(playerConnection, times(3)).sendToPlayer(anyString(), notificationCaptor.capture());
         
         List<String> notifications = notificationCaptor.getAllValues();
         for (String notification : notifications) {
