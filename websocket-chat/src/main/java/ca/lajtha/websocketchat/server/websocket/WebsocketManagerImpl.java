@@ -1,26 +1,92 @@
 package ca.lajtha.websocketchat.server.websocket;
 
-import com.google.inject.Inject;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Implementation of WebsocketManager that sends messages to WebSocket connections.
  */
 public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
     private final Map<String, ChannelHandlerContext> socketChannels;
+    private final Set<MessageListener> messageListeners;
 
-    /**
-     * Creates a new WebsocketManagerImpl with the given socket channels map.
-     * 
-     * @param socketChannels the map of socket IDs to their channel handler contexts
-     */
-    @Inject
-    WebsocketManagerImpl(Map<String, ChannelHandlerContext> socketChannels) {
-        this.socketChannels = socketChannels;
+    public WebsocketManagerImpl() {
+        this.socketChannels = new ConcurrentHashMap<>();
+        this.messageListeners = new HashSet<>();
     }
+    
+    /**
+     * Registers a message listener to receive player events.
+     *
+     * @param listener the message listener to register
+     */
+    public void addMessageListener(MessageListener listener) {
+            messageListeners.add(listener);
+    }
+    
+    /**
+     * Unregisters a message listener.
+     *
+     * @param listener the message listener to unregister
+     */
+    public void removeMessageListener(MessageListener listener) {
+        messageListeners.remove(listener);
+    }
+    
+    /**
+     * Forwards a player connected event to all registered listeners.
+     *
+     * @param socketId the unique identifier of the socket
+     */
+    private void notifyPlayerConnected(String socketId) {
+        for (MessageListener listener : messageListeners) {
+            try {
+                listener.playerConnected(socketId);
+            } catch (Exception e) {
+                System.err.println("Error notifying listener of player connected: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /**
+     * Forwards a player disconnected event to all registered listeners.
+     *
+     * @param socketId the unique identifier of the socket
+     */
+    private void notifyPlayerDisconnected(String socketId) {
+        for (MessageListener listener : messageListeners) {
+            try {
+                listener.playerDisconnected(socketId);
+            } catch (Exception e) {
+                System.err.println("Error notifying listener of player disconnected: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /**
+     * Forwards a player message to all registered listeners.
+     *
+     * @param socketId the unique identifier of the socket
+     * @param request the message request
+     */
+    private void notifyPlayerMessage(String socketId, String request) {
+        for (MessageListener listener : messageListeners) {
+            try {
+                listener.handlePlayerMessage(socketId, request);
+            } catch (Exception e) {
+                System.err.println("Error notifying listener of player message: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+    
     /**
      * Registers a socket's channel.
      *
@@ -30,6 +96,7 @@ public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
     @Override
     public void playerConnected(String socketId, ChannelHandlerContext ctx) {
         socketChannels.put(socketId, ctx);
+        notifyPlayerConnected(socketId);
     }
 
     /**
@@ -40,7 +107,14 @@ public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
     @Override
     public void playerDisconnected(String socketId) {
         socketChannels.remove(socketId);
+        notifyPlayerDisconnected(socketId);
     }
+
+    @Override
+    public void handlePlayerMessage(String socketId, String request) {
+        notifyPlayerMessage(socketId, request);
+    }
+
     /**
      * Sends a message to a specific socket.
      * 

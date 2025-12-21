@@ -12,18 +12,26 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Handles control messages related to authentication and authorization.
  */
-public class ConnectionManager implements PlayerConnectionListener, PlayerMessageSender {
+public class ConnectionManager implements MessageListener, PlayerMessageSender {
     private final Map<String, String> socketIdToUserId = new ConcurrentHashMap<>();
     private final Map<String, String> userIdToSocketId = new ConcurrentHashMap<>();
     private final Set<String> authenticatedSockets = ConcurrentHashMap.newKeySet();
-    private final Game game;
+    private Game game;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MessageSender messageSender;
 
-    @Inject
-    public ConnectionManager(Game game, MessageSender messageSender) {
-        this.game = game;
+    public ConnectionManager(MessageSender messageSender) {
         this.messageSender = messageSender;
+    }
+
+
+    /**
+     * Sets the game instance.
+     *
+     * @param game the game instance to set
+     */
+    public void setGame(Game game) {
+        this.game = game;
     }
 
     @Override

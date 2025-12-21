@@ -11,5 +11,3 @@ public record TokenVerificationRequest(
 ) {
     public static final String MESSAGE_TYPE = "verifyToken";
 }
-
-

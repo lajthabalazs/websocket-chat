@@ -3,7 +3,7 @@ package ca.lajtha.websocketchat.user;
 /**
  * Represents the response from a login operation, containing authentication token and user ID.
  */
-public record UserLoginResponse(
+public record UserToken(
     String token,
     String userId
 ) {
@@ -13,7 +13,7 @@ public record UserLoginResponse(
      * @param token the authentication token
      * @param userId the unique user identifier
      */
-    public UserLoginResponse {
+    public UserToken {
         // Record constructor - parameters are automatically assigned to fields
     }
 }

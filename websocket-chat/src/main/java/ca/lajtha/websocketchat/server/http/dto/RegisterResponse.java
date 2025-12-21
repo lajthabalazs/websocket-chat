@@ -1,0 +1,34 @@
+package ca.lajtha.websocketchat.server.http.dto;
+
+/**
+ * Response DTO for user registration.
+ */
+public class RegisterResponse {
+    private String userId;
+    private String message;
+    
+    public RegisterResponse() {
+    }
+    
+    public RegisterResponse(String userId, String message) {
+        this.userId = userId;
+        this.message = message;
+    }
+    
+    public String getUserId() {
+        return userId;
+    }
+    
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+    
+    public String getMessage() {
+        return message;
+    }
+    
+    public void setMessage(String message) {
+        this.message = message;
+    }
+}
+

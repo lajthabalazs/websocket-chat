@@ -31,7 +31,7 @@ class WebSocketFrameHandlerTest {
 
     @BeforeEach
     void setUp() {
-        handler = new WebSocketFrameHandler(websocketConnectionManager, websocketManager);
+        handler = new WebSocketFrameHandler(websocketManager);
         channel = new EmbeddedChannel(handler);
     }
 
@@ -79,8 +79,8 @@ class WebSocketFrameHandlerTest {
         ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<io.netty.channel.ChannelHandlerContext> contextCaptor = ArgumentCaptor.forClass(io.netty.channel.ChannelHandlerContext.class);
         
-        WebSocketFrameHandler handler1 = new WebSocketFrameHandler(websocketConnectionManager, websocketManager);
-        WebSocketFrameHandler handler2 = new WebSocketFrameHandler(websocketConnectionManager, websocketManager);
+        WebSocketFrameHandler handler1 = new WebSocketFrameHandler(websocketManager);
+        WebSocketFrameHandler handler2 = new WebSocketFrameHandler(websocketManager);
         EmbeddedChannel channel1 = new EmbeddedChannel(handler1);
         EmbeddedChannel channel2 = new EmbeddedChannel(handler2);
 

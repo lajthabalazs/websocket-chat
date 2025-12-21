@@ -16,13 +16,11 @@ import io.netty.handler.logging.LoggingHandler;
 
 public class WebSocketServer {
     private final ServerConfig config;
-    private final ConnectionManager websocketConnectionManager;
     private final WebsocketManager websocketManager;
 
     @Inject
-    public WebSocketServer(ServerConfig config, ConnectionManager websocketConnectionManager, WebsocketManager websocketManager) {
+    public WebSocketServer(ServerConfig config, WebsocketManager websocketManager) {
         this.config = config;
-        this.websocketConnectionManager = websocketConnectionManager;
         this.websocketManager = websocketManager;
     }
 
@@ -50,7 +48,7 @@ public class WebSocketServer {
                             pipeline.addLast(new WebSocketServerProtocolHandler(config.getWebsocketPath()));
                             
                             // Custom handler for WebSocket messages
-                            WebSocketFrameHandler webSocketFrameHandler = new WebSocketFrameHandler(websocketConnectionManager, websocketManager);
+                            WebSocketFrameHandler webSocketFrameHandler = new WebSocketFrameHandler(websocketManager);
                             pipeline.addLast(webSocketFrameHandler);
                         }
                     })

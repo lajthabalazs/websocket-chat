@@ -32,7 +32,7 @@ class WebSocketServerTest {
         lenient().when(config.isSocketKeepalive()).thenReturn(true);
         lenient().when(config.getHttpMaxContentLength()).thenReturn(65536);
 
-        server = new WebSocketServer(config, websocketConnectionManager, websocketManager);
+        server = new WebSocketServer(config, websocketManager);
     }
 
     @Test
@@ -49,7 +49,7 @@ class WebSocketServerTest {
         // The start() method will try to bind to a real port, so we can't easily test
         // the full startup without integration tests, but we can verify the constructor works
         assertDoesNotThrow(() -> {
-            WebSocketServer testServer = new WebSocketServer(config, websocketConnectionManager, websocketManager);
+            WebSocketServer testServer = new WebSocketServer(config, websocketManager);
             assertNotNull(testServer);
         });
     }

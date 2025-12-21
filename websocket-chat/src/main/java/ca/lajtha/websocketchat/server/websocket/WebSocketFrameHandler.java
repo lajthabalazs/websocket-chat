@@ -1,7 +1,5 @@
 package ca.lajtha.websocketchat.server.websocket;
 
-import ca.lajtha.websocketchat.game.Game;
-import com.google.inject.Inject;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -13,11 +11,9 @@ import java.util.UUID;
 public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
     private static final AttributeKey<String> SOCKET_ID_KEY = AttributeKey.valueOf("socketId");
 
-    private final PlayerConnectionListener playerConnectionListener;
     private final WebsocketManager websocketManager;
 
-    public WebSocketFrameHandler(PlayerConnectionListener playerConnectionListener, WebsocketManager websocketManager) {
-        this.playerConnectionListener = playerConnectionListener;
+    public WebSocketFrameHandler(WebsocketManager websocketManager) {
         this.websocketManager = websocketManager;
     }
 
@@ -38,7 +34,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             System.out.println("Received from socket " + socketId + ": " + request);
             
             // Forward message to game
-            playerConnectionListener.handlePlayerMessage(socketId, request);
+            websocketManager.handlePlayerMessage(socketId, request);
         } else {
             String message = "Unsupported frame type: " + frame.getClass().getName();
             throw new UnsupportedOperationException(message);
@@ -52,7 +48,6 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         ctx.channel().attr(SOCKET_ID_KEY).set(socketId);
         
         System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ")");
-        playerConnectionListener.playerConnected(socketId);
         websocketManager.playerConnected(socketId, ctx);
     }
 
@@ -61,7 +56,6 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         // Get the socketId from channel attributes
         String socketId = ctx.channel().attr(SOCKET_ID_KEY).get();
         System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ")");
-        playerConnectionListener.playerDisconnected(socketId);
         websocketManager.playerDisconnected(socketId);
     }
 

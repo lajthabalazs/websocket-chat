@@ -114,7 +114,7 @@ public class UserManager {
      * @param password the user's password (will be hashed before verification)
      * @return a UserLoginResponse containing token and userId if authentication succeeds, null otherwise
      */
-    public UserLoginResponse login(String email, String password) {
+    public UserToken login(String email, String password) {
         if (email == null || email.trim().isEmpty()) {
             throw new IllegalArgumentException("Email cannot be null or empty");
         }
@@ -135,7 +135,7 @@ public class UserManager {
         // Generate a JWT token containing userId
         String token = generateJwtToken(userId);
         
-        return new UserLoginResponse(token, userId);
+        return new UserToken(token, userId);
     }
     
     /**
