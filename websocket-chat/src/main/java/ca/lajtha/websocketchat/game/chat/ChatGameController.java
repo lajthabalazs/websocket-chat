@@ -111,9 +111,7 @@ public class ChatGameController implements Game, ChatMessageListener {
         List<PlayerInfo> players = game.getPlayers();
         
         for (PlayerInfo player : players) {
-            if (playerConnection.isPlayerConnected(player.playerId())) {
-                playerConnection.sendToPlayer(player.playerId(), serializedNotification);
-            }
+            playerConnection.sendToPlayer(player.playerId(), serializedNotification);
         }
     }
 

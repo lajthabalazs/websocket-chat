@@ -1,5 +1,7 @@
 package ca.lajtha.websocketchat;
 
+import ca.lajtha.websocketchat.auth.StubTokenManager;
+import ca.lajtha.websocketchat.auth.TokenManager;
 import ca.lajtha.websocketchat.game.Game;
 import ca.lajtha.websocketchat.game.chat.ChatGameController;
 import ca.lajtha.websocketchat.server.PropertiesServerConfig;
@@ -10,8 +12,14 @@ import ca.lajtha.websocketchat.server.websocket.PlayerMessageSender;
 import ca.lajtha.websocketchat.server.websocket.PlayerWebsocketConnectionManager;
 import ca.lajtha.websocketchat.server.websocket.WebSocketFrameHandler;
 import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
+import ca.lajtha.websocketchat.server.websocket.WebsocketManager;
+import ca.lajtha.websocketchat.server.websocket.WebsocketManagerImpl;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import io.netty.channel.ChannelHandlerContext;
+
+import java.util.Map;
 
 public class ServerModule extends AbstractModule {
     @Override
@@ -22,6 +30,10 @@ public class ServerModule extends AbstractModule {
         // Bind UserDatabase interface to InMemoryUserDatabase implementation as a singleton
         bind(UserDatabase.class).to(InMemoryUserDatabase.class).in(Scopes.SINGLETON);
         
+        // Bind TokenManager interface to StubTokenManager implementation as a singleton
+        // TODO: Replace StubTokenManager with real JWT token manager implementation
+        bind(TokenManager.class).to(StubTokenManager.class).in(Scopes.SINGLETON);
+        
         // Bind ServerConfig interface to PropertiesServerConfig implementation as a singleton
         // since it loads configuration once
         bind(ServerConfig.class).to(PropertiesServerConfig.class).asEagerSingleton();
@@ -31,6 +43,9 @@ public class ServerModule extends AbstractModule {
         bind(PlayerMessageSender.class).to(PlayerWebsocketConnectionManager.class);
 
         bind(Game.class).to(ChatGameController.class).asEagerSingleton();
+        
+        // Bind WebsocketManager to WebsocketManagerImpl
+        bind(WebsocketManager.class).to(WebsocketManagerImpl.class).in(Scopes.SINGLETON);
         
         // Bind WebSocketServer
         bind(WebSocketServer.class);

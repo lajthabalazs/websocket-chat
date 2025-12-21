@@ -11,12 +11,14 @@ import io.netty.util.AttributeKey;
 import java.util.UUID;
 
 public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
-    private static final AttributeKey<String> PLAYER_ID_KEY = AttributeKey.valueOf("playerId");
+    private static final AttributeKey<String> SOCKET_ID_KEY = AttributeKey.valueOf("socketId");
 
     private final PlayerConnectionListener playerConnectionListener;
+    private final WebsocketManager websocketManager;
 
-    public WebSocketFrameHandler(PlayerConnectionListener playerConnectionListener) {
+    public WebSocketFrameHandler(PlayerConnectionListener playerConnectionListener, WebsocketManager websocketManager) {
         this.playerConnectionListener = playerConnectionListener;
+        this.websocketManager = websocketManager;
     }
 
     @Override
@@ -26,17 +28,17 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
             String request = textFrame.text();
             
-            // Get the playerId from channel attributes
-            String playerId = ctx.channel().attr(PLAYER_ID_KEY).get();
-            if (playerId == null) {
-                System.err.println("Warning: Received message from channel without playerId");
+            // Get the socketId from channel attributes
+            String socketId = ctx.channel().attr(SOCKET_ID_KEY).get();
+            if (socketId == null) {
+                System.err.println("Warning: Received message from channel without socketId");
                 return;
             }
             
-            System.out.println("Received from player " + playerId + ": " + request);
+            System.out.println("Received from socket " + socketId + ": " + request);
             
             // Forward message to game
-            playerConnectionListener.handlePlayerMessage(playerId, request);
+            playerConnectionListener.handlePlayerMessage(socketId, request);
         } else {
             String message = "Unsupported frame type: " + frame.getClass().getName();
             throw new UnsupportedOperationException(message);
@@ -45,20 +47,22 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        // Generate a unique playerId for this connection
-        String playerId = UUID.randomUUID().toString();
-        ctx.channel().attr(PLAYER_ID_KEY).set(playerId);
+        // Generate a unique socketId for this connection
+        String socketId = UUID.randomUUID().toString();
+        ctx.channel().attr(SOCKET_ID_KEY).set(socketId);
         
-        System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (playerId: " + playerId + ")");
-        playerConnectionListener.playerConnected(playerId, ctx);
+        System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ")");
+        playerConnectionListener.playerConnected(socketId);
+        websocketManager.playerConnected(socketId, ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        // Get the playerId from channel attributes
-        String playerId = ctx.channel().attr(PLAYER_ID_KEY).get();
-        System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (playerId: " + playerId + ")");
-        playerConnectionListener.playerDisconnected(playerId);
+        // Get the socketId from channel attributes
+        String socketId = ctx.channel().attr(SOCKET_ID_KEY).get();
+        System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ")");
+        playerConnectionListener.playerDisconnected(socketId);
+        websocketManager.playerDisconnected(socketId);
     }
 
     @Override

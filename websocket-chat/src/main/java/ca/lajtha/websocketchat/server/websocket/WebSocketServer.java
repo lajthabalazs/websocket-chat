@@ -10,20 +10,21 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
 public class WebSocketServer {
     private final ServerConfig config;
-    private final ChatGameController game;
     private final PlayerWebsocketConnectionManager websocketConnectionManager;
+    private final WebsocketManager websocketManager;
 
     @Inject
-    public WebSocketServer(ServerConfig config, PlayerWebsocketConnectionManager websocketConnectionManager, ChatGameController game) {
+    public WebSocketServer(ServerConfig config, PlayerWebsocketConnectionManager websocketConnectionManager, WebsocketManager websocketManager) {
         this.config = config;
-        this.game = game;
         this.websocketConnectionManager = websocketConnectionManager;
+        this.websocketManager = websocketManager;
     }
 
     public void start() throws InterruptedException {
@@ -50,7 +51,7 @@ public class WebSocketServer {
                             pipeline.addLast(new WebSocketServerProtocolHandler(config.getWebsocketPath()));
                             
                             // Custom handler for WebSocket messages
-                            WebSocketFrameHandler webSocketFrameHandler = new WebSocketFrameHandler(websocketConnectionManager);
+                            WebSocketFrameHandler webSocketFrameHandler = new WebSocketFrameHandler(websocketConnectionManager, websocketManager);
                             pipeline.addLast(webSocketFrameHandler);
                         }
                     })

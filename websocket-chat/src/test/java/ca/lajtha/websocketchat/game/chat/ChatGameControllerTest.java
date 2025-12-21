@@ -280,9 +280,6 @@ class ChatGameControllerTest {
         String joinedPlayerId = "player2";
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
-        when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
-        when(playerConnection.isPlayerConnected("player2")).thenReturn(true);
-        when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
 
         // Act
         controller.onPlayerJoinedChat("name 2");
@@ -311,9 +308,6 @@ class ChatGameControllerTest {
         String joinedPlayerId = "player2";
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
-        when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
-        when(playerConnection.isPlayerConnected("player2")).thenReturn(false);
-        when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
         // Act
         controller.onPlayerJoinedChat("name 2");
 
@@ -333,10 +327,6 @@ class ChatGameControllerTest {
         // Arrange
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
-        when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
-        when(playerConnection.isPlayerConnected("player2")).thenReturn(false);
-        when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
-
 
         // Act
         controller.onPlayerLeftChat("name 2");
@@ -363,10 +353,6 @@ class ChatGameControllerTest {
         // Arrange
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
-        when(playerConnection.isPlayerConnected("player1")).thenReturn(false);
-
-        when(playerConnection.isPlayerConnected("player2")).thenReturn(false);
-        when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
         // Act
         controller.onPlayerLeftChat("name 2");
 
@@ -384,10 +370,6 @@ class ChatGameControllerTest {
         String messageText = "Hello, everyone!";
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
-        when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
-        when(playerConnection.isPlayerConnected("player2")).thenReturn(true);
-        when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
-
         // Act
         controller.onMessageReceived(new VisibleMessage("name 1", messageText));
 
@@ -417,9 +399,6 @@ class ChatGameControllerTest {
         String messageText = "Hello!";
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
-        when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
-        when(playerConnection.isPlayerConnected("player2")).thenReturn(false);
-        when(playerConnection.isPlayerConnected("player3")).thenReturn(true);
 
         // Act
         controller.onMessageReceived( new VisibleMessage(senderPlayerId, messageText));
@@ -484,8 +463,6 @@ class ChatGameControllerTest {
         String messageText = "Hello, \"world\"!";
         List<PlayerInfo> allPlayers = List.of(new PlayerInfo("player1", "name 1"), new PlayerInfo("player2", "name 2"), new PlayerInfo("player3", "name 3"));
         when(game.getPlayers()).thenReturn(allPlayers);
-        when(playerConnection.isPlayerConnected("player1")).thenReturn(true);
-        when(playerConnection.isPlayerConnected("player2")).thenReturn(true);
 
         // Act
         controller.onMessageReceived(new VisibleMessage("name 1", messageText));
