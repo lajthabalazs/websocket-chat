@@ -1,5 +1,7 @@
 package ca.lajtha.websocketchat.user;
 
+import de.mkammerer.argon2.Argon2;
+import de.mkammerer.argon2.Argon2Factory;
 import java.util.UUID;
 
 /**
@@ -8,6 +10,12 @@ import java.util.UUID;
  */
 public class UserManager {
     private final UserDatabase database;
+    private final Argon2 argon2;
+    
+    // Argon2id parameters - can be adjusted based on performance requirements
+    private static final int ITERATIONS = 2;
+    private static final int MEMORY = 65536; // 64 MB
+    private static final int PARALLELISM = 1;
     
     /**
      * Creates a new UserManager with the specified database.
@@ -16,6 +24,7 @@ public class UserManager {
      */
     public UserManager(UserDatabase database) {
         this.database = database;
+        this.argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
     }
     
     /**
@@ -80,9 +89,8 @@ public class UserManager {
             throw new IllegalArgumentException("Password cannot be null or empty");
         }
         
-        String passwordHash = hashPassword(password);
         String storedPasswordHash = database.getPasswordHash(email.trim());
-        if (storedPasswordHash == null || !storedPasswordHash.equals(passwordHash)) {
+        if (storedPasswordHash == null || !verifyPassword(password, storedPasswordHash)) {
             return null; // Authentication failed
         }
         
@@ -132,15 +140,29 @@ public class UserManager {
     }
     
     /**
-     * Hashes a password. Currently uses identity function (no hashing).
-     * This can be replaced with a proper hashing algorithm (e.g., bcrypt, Argon2) in the future.
+     * Hashes a password using Argon2id.
      * 
      * @param password the plain text password
-     * @return the hashed password (currently returns the password as-is)
+     * @return the hashed password string
      */
     private String hashPassword(String password) {
-        // Identity function for now - can be replaced with proper hashing later
-        return password;
+        return argon2.hash(ITERATIONS, MEMORY, PARALLELISM, password.toCharArray());
+    }
+    
+    /**
+     * Verifies a password against a stored hash using Argon2id.
+     * 
+     * @param password the plain text password to verify
+     * @param hash the stored password hash
+     * @return true if the password matches the hash, false otherwise
+     */
+    private boolean verifyPassword(String password, String hash) {
+        try {
+            return argon2.verify(hash, password.toCharArray());
+        } catch (Exception e) {
+            // If verification fails for any reason (invalid hash format, etc.), return false
+            return false;
+        }
     }
 }
 
