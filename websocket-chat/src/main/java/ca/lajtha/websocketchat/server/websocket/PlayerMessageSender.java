@@ -1,9 +1,9 @@
 package ca.lajtha.websocketchat.server.websocket;
 
 /**
- * Interface for managing player connections and sending messages to players.
+ * Interface for sending messages to players.
  */
-public interface PlayerConnection {
+public interface PlayerMessageSender {
 
 
     /**

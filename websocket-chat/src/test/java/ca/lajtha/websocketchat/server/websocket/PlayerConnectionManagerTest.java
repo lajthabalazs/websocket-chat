@@ -1,6 +1,5 @@
 package ca.lajtha.websocketchat.server.websocket;
 
-import ca.lajtha.websocketchat.server.websocket.PlayerWebsocketConnectionManager;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -47,25 +46,23 @@ class PlayerConnectionManagerTest {
         String playerId = "player1";
 
         // Act
-        connectionManager.registerPlayer(playerId, getContext(channel1));
+        connectionManager.playerConnected(playerId, getContext(channel1));
 
         // Assert
         assertTrue(connectionManager.isPlayerConnected(playerId));
-        assertTrue(connectionManager.getConnectedPlayers().contains(playerId));
     }
 
     @Test
     void unregisterPlayer_removesPlayer() {
         // Arrange
         String playerId = "player1";
-        connectionManager.registerPlayer(playerId, getContext(channel1));
+        connectionManager.playerConnected(playerId, getContext(channel1));
 
         // Act
-        connectionManager.unregisterPlayer(playerId);
+        connectionManager.playerDisconnected(playerId);
 
         // Assert
         assertFalse(connectionManager.isPlayerConnected(playerId));
-        assertFalse(connectionManager.getConnectedPlayers().contains(playerId));
     }
 
     @Test
@@ -73,7 +70,7 @@ class PlayerConnectionManagerTest {
         // Arrange
         String playerId = "player1";
         String message = "Test message";
-        connectionManager.registerPlayer(playerId, getContext(channel1));
+        connectionManager.playerConnected(playerId, getContext(channel1));
 
         // Act
         boolean sent = connectionManager.sendToPlayer(playerId, message);
@@ -97,41 +94,6 @@ class PlayerConnectionManagerTest {
 
         // Assert
         assertFalse(sent);
-    }
-
-    @Test
-    void getConnectedPlayers_returnsAllPlayers() {
-        // Arrange
-        String playerId1 = "player1";
-        String playerId2 = "player2";
-        connectionManager.registerPlayer(playerId1, getContext(channel1));
-        connectionManager.registerPlayer(playerId2, getContext(channel2));
-
-        // Act
-        var players = connectionManager.getConnectedPlayers();
-
-        // Assert
-        assertEquals(2, players.size());
-        assertTrue(players.contains(playerId1));
-        assertTrue(players.contains(playerId2));
-    }
-
-    @Test
-    void getConnectedPlayers_removesInactiveChannels() {
-        // Arrange
-        String playerId1 = "player1";
-        String playerId2 = "player2";
-        connectionManager.registerPlayer(playerId1, getContext(channel1));
-        connectionManager.registerPlayer(playerId2, getContext(channel2));
-
-        // Act - close one channel
-        channel1.close();
-        var players = connectionManager.getConnectedPlayers();
-
-        // Assert - inactive channel should be removed
-        assertEquals(1, players.size());
-        assertFalse(players.contains(playerId1));
-        assertTrue(players.contains(playerId2));
     }
 
     @Test

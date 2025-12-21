@@ -1,6 +1,6 @@
 package ca.lajtha.websocketchat.game.chat;
 
-import ca.lajtha.websocketchat.server.websocket.PlayerConnection;
+import ca.lajtha.websocketchat.server.websocket.PlayerMessageSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ class ChatGameControllerTest {
     private ChatGame game;
 
     @Mock
-    private PlayerConnection playerConnection;
+    private PlayerMessageSender playerConnection;
 
     private ChatGameController controller;
     private ObjectMapper objectMapper;

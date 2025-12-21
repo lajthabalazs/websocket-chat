@@ -14,12 +14,11 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
     private static final AttributeKey<String> PLAYER_ID_KEY = AttributeKey.valueOf("playerId");
     
     private final Game game;
-    private final PlayerWebsocketConnectionManager connectionManager;
+    private final PlayerConnectionListener playerConnectionListener;
 
-    @Inject
-    public WebSocketFrameHandler(Game game, PlayerWebsocketConnectionManager connectionManager) {
+    public WebSocketFrameHandler(Game game, PlayerConnectionListener playerConnectionListener) {
         this.game = game;
-        this.connectionManager = connectionManager;
+        this.playerConnectionListener = playerConnectionListener;
     }
 
     @Override
@@ -56,7 +55,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         
         // Notify game about new player
         game.onPlayerConnected(playerId);
-        connectionManager.registerPlayer(playerId, ctx);
+        playerConnectionListener.playerConnected(playerId, ctx);
         ctx.channel().writeAndFlush(new TextWebSocketFrame("Welcome to the WebSocket server! Your player ID: " + playerId));
     }
 
@@ -64,7 +63,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
     public void channelInactive(ChannelHandlerContext ctx) {
         // Get the playerId from channel attributes
         String playerId = ctx.channel().attr(PLAYER_ID_KEY).get();
-        connectionManager.unregisterPlayer(playerId);
+        playerConnectionListener.playerDisconnected(playerId);
         
         if (playerId != null) {
             System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (playerId: " + playerId + ")");

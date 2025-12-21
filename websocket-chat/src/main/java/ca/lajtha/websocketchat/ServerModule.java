@@ -6,7 +6,7 @@ import ca.lajtha.websocketchat.server.PropertiesServerConfig;
 import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.user.InMemoryUserDatabase;
 import ca.lajtha.websocketchat.user.UserDatabase;
-import ca.lajtha.websocketchat.server.websocket.PlayerConnection;
+import ca.lajtha.websocketchat.server.websocket.PlayerMessageSender;
 import ca.lajtha.websocketchat.server.websocket.PlayerWebsocketConnectionManager;
 import ca.lajtha.websocketchat.server.websocket.WebSocketFrameHandler;
 import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
@@ -28,7 +28,7 @@ public class ServerModule extends AbstractModule {
 
         bind(PlayerWebsocketConnectionManager.class).in(Scopes.SINGLETON);
 
-        bind(PlayerConnection.class).to(PlayerWebsocketConnectionManager.class);
+        bind(PlayerMessageSender.class).to(PlayerWebsocketConnectionManager.class);
 
         bind(Game.class).to(ChatGameController.class).asEagerSingleton();
         

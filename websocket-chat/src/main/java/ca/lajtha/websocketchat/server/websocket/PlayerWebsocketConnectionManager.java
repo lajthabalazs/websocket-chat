@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Manages player connections and allows sending messages to players.
  */
-public class PlayerWebsocketConnectionManager implements PlayerConnectionManager {
+public class PlayerWebsocketConnectionManager implements PlayerConnectionListener, PlayerMessageSender {
     private final Map<String, ChannelHandlerContext> playerChannels = new ConcurrentHashMap<>();
 
     /**
@@ -19,7 +19,7 @@ public class PlayerWebsocketConnectionManager implements PlayerConnectionManager
      * @param ctx the channel handler context for the player's connection
      */
     @Override
-    public void registerPlayer(String playerId, ChannelHandlerContext ctx) {
+    public void playerConnected(String playerId, ChannelHandlerContext ctx) {
         playerChannels.put(playerId, ctx);
     }
 
@@ -29,7 +29,7 @@ public class PlayerWebsocketConnectionManager implements PlayerConnectionManager
      * @param playerId the unique identifier of the player
      */
     @Override
-    public void unregisterPlayer(String playerId) {
+    public void playerDisconnected(String playerId) {
         playerChannels.remove(playerId);
     }
 
@@ -48,18 +48,6 @@ public class PlayerWebsocketConnectionManager implements PlayerConnectionManager
             return true;
         }
         return false;
-    }
-
-    /**
-     * Gets all connected player IDs.
-     * 
-     * @return a set of all connected player IDs
-     */
-    @Override
-    public java.util.Set<String> getConnectedPlayers() {
-        // Clean up inactive channels
-        playerChannels.entrySet().removeIf(entry -> !entry.getValue().channel().isActive());
-        return playerChannels.keySet();
     }
 
     /**
