@@ -39,8 +39,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             response = createResponse(OK, content);
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
         } else {
-            // Handle 404
-            String content = "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p></body></html>";
+            // Handle 404 - load 404 page from resources
+            String content = loadHtmlFromResources("404.html");
             response = createResponse(NOT_FOUND, content);
         }
         
@@ -66,6 +66,10 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         try (InputStream input = getClass().getClassLoader().getResourceAsStream(filename)) {
             if (input == null) {
                 System.err.println("Warning: " + filename + " not found in resources, using fallback HTML");
+                // Return appropriate fallback based on filename
+                if ("404.html".equals(filename)) {
+                    return "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p><a href=\"/\">Go to Home</a></body></html>";
+                }
                 return "<html><body><h1>HTTP Server</h1><p>Server is running!</p></body></html>";
             }
             try (BufferedReader reader = new BufferedReader(
@@ -74,6 +78,10 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             }
         } catch (IOException e) {
             System.err.println("Error loading " + filename + " from resources: " + e.getMessage());
+            // Return appropriate fallback based on filename
+            if ("404.html".equals(filename)) {
+                return "<html><body><h1>404 Not Found</h1><p>The requested resource was not found.</p><a href=\"/\">Go to Home</a></body></html>";
+            }
             return "<html><body><h1>HTTP Server</h1><p>Server is running!</p><p>Error loading HTML file.</p></body></html>";
         }
     }
