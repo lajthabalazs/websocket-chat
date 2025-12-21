@@ -135,3 +135,44 @@ input[type="password"]:focus {
     display: block;
 }
 
+.user-info {
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.user-email {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 1.1em;
+    color: #333;
+}
+
+.user-icon {
+    font-size: 1.5em;
+}
+
+.user-id {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    color: #6b7280;
+}
+
+.user-id-label {
+    font-weight: 500;
+}
+
+#userIdDisplay {
+    font-family: monospace;
+    background: #e5e7eb;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+

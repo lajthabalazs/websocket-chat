@@ -9,40 +9,64 @@
 <body>
     <div class="container">
         <h1>💬 WebSocket Chat</h1>
-        <p class="subtitle">Sign in to start chatting</p>
         
-        <div id="message" class="message"></div>
-        
-        <form id="authForm">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    placeholder="your@email.com"
-                    required
-                    autocomplete="email"
-                >
-            </div>
+        <!-- Login Form (shown when not logged in) -->
+        <div id="loginView">
+            <p class="subtitle">Sign in to start chatting</p>
             
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    placeholder="Enter your password"
-                    required
-                    autocomplete="current-password"
-                >
+            <div id="message" class="message"></div>
+            
+            <form id="authForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="your@email.com"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" id="loginBtn" class="btn btn-primary">Login</button>
+                    <button type="button" id="registerBtn" class="btn btn-secondary">Register</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Logged In View (shown when logged in) -->
+        <div id="loggedInView" style="display: none;">
+            <p class="subtitle">Welcome back!</p>
+            
+            <div id="userInfo" class="user-info">
+                <div class="user-email">
+                    <span class="user-icon">👤</span>
+                    <span id="userEmailDisplay"></span>
+                </div>
+                <div class="user-id">
+                    <span class="user-id-label">User ID:</span>
+                    <span id="userIdDisplay"></span>
+                </div>
             </div>
             
             <div class="button-group">
-                <button type="button" id="loginBtn" class="btn btn-primary">Login</button>
-                <button type="button" id="registerBtn" class="btn btn-secondary">Register</button>
+                <button type="button" id="logoutBtn" class="btn btn-secondary">Logout</button>
             </div>
-        </form>
+        </div>
     </div>
 
     <script src="/js/auth.js"></script>

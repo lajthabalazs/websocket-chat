@@ -4,6 +4,11 @@ const loginBtn = document.getElementById('loginBtn');
 const registerBtn = document.getElementById('registerBtn');
 const messageDiv = document.getElementById('message');
 const authForm = document.getElementById('authForm');
+const loginView = document.getElementById('loginView');
+const loggedInView = document.getElementById('loggedInView');
+const userEmailDisplay = document.getElementById('userEmailDisplay');
+const userIdDisplay = document.getElementById('userIdDisplay');
+const logoutBtn = document.getElementById('logoutBtn');
 
 function showMessage(text, type) {
     messageDiv.textContent = text;
@@ -53,17 +58,13 @@ async function login() {
         const data = await response.json();
 
         if (response.ok) {
-            // Store token in localStorage
-            localStorage.setItem('authToken', data.token);
+            // Token is now stored in HTTP-only cookie by the server
+            // Store userId and email in localStorage for display purposes only
             localStorage.setItem('userId', data.userId);
+            localStorage.setItem('userEmail', email); // Store email for display
             
-            showMessage('Login successful! You are now logged in.', 'success');
-            
-            // Optionally redirect to a chat page if it exists
-            // For now, just show success message
-            // setTimeout(() => {
-            //     window.location.href = '/chat.html';
-            // }, 2000);
+            // Update UI to show logged-in state
+            showLoggedInState(email, data.userId);
         } else {
             showMessage(data.error || 'Login failed. Please check your credentials.', 'error');
             setLoading(false);
@@ -135,4 +136,91 @@ passwordInput.addEventListener('keypress', (e) => {
         login();
     }
 });
+
+// Check authentication state on page load
+async function checkAuthState() {
+    try {
+        // Check if user is authenticated by calling the /auth/me endpoint
+        // This reads from the HTTP-only cookie server-side without exposing the token
+        const response = await fetch('/auth/me', {
+            method: 'GET',
+            credentials: 'include' // Important: include cookies in request
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const email = localStorage.getItem('userEmail') || 'User'; // Fallback if email not in localStorage
+            showLoggedInState(email, data.userId);
+        } else {
+            // Not authenticated, clear any stale localStorage data
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userEmail');
+            showLoginState();
+        }
+    } catch (error) {
+        console.error('Error checking auth state:', error);
+        showLoginState();
+    }
+}
+
+function showLoggedInState(email, userId) {
+    // Hide login form
+    loginView.style.display = 'none';
+    
+    // Show logged-in view
+    loggedInView.style.display = 'block';
+    
+    // Update user info display
+    userEmailDisplay.textContent = email;
+    userIdDisplay.textContent = userId;
+}
+
+function showLoginState() {
+    // Show login form
+    loginView.style.display = 'block';
+    
+    // Hide logged-in view
+    loggedInView.style.display = 'none';
+    
+    // Clear form
+    emailInput.value = '';
+    passwordInput.value = '';
+    hideMessage();
+}
+
+async function logout() {
+    try {
+        // Call logout endpoint to clear HTTP-only cookie
+        const response = await fetch('/auth/logout', {
+            method: 'POST',
+            credentials: 'include' // Important: include cookies in request
+        });
+        
+        // Clear localStorage
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userEmail');
+        
+        // Show login form
+        showLoginState();
+        
+        if (response.ok) {
+            showMessage('You have been logged out.', 'info');
+        } else {
+            showMessage('Logged out locally.', 'info');
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+        // Clear localStorage anyway
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userEmail');
+        showLoginState();
+        showMessage('Logged out locally.', 'info');
+    }
+}
+
+// Event listener for logout button
+logoutBtn.addEventListener('click', logout);
+
+// Check auth state when page loads
+checkAuthState();
 

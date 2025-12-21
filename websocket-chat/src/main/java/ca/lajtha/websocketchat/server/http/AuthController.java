@@ -6,6 +6,8 @@ import ca.lajtha.websocketchat.user.UserManager;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
+import io.micronaut.http.cookie.Cookie;
+import io.micronaut.http.cookie.Cookies;
 import jakarta.inject.Inject;
 
 import java.util.Map;
@@ -75,12 +77,67 @@ public class AuthController {
                 return HttpResponse.unauthorized().body(Map.of("error", "Invalid email or password"));
             }
             
-            return HttpResponse.ok(new LoginResponse(loginResponse.token(), loginResponse.userId()));
+            // Set HTTP-only cookie with JWT token
+            Cookie authCookie = Cookie.of("authToken", loginResponse.token())
+                    .httpOnly(true)
+                    .secure(false) // Set to true in production with HTTPS
+                    .maxAge(7 * 24 * 60 * 60); // 7 days
+            
+            return HttpResponse.ok(new LoginResponse(null, loginResponse.userId()))
+                    .cookie(authCookie);
         } catch (IllegalArgumentException e) {
             return HttpResponse.badRequest(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return HttpResponse.serverError(Map.of("error", e.getMessage()));
         }
+    }
+    
+    /**
+     * Checks if the user is authenticated by verifying the HTTP-only cookie.
+     * Returns user info without exposing the token.
+     * GET /auth/me
+     */
+    @Get("/me")
+    @Produces(MediaType.APPLICATION_JSON)
+    public HttpResponse<?> getCurrentUser(Cookies cookies) {
+        Cookie authCookie = cookies.findCookie("authToken").orElse(null);
+        
+        if (authCookie == null || authCookie.getValue() == null || authCookie.getValue().isEmpty()) {
+            return HttpResponse.unauthorized().body(Map.of("error", "Not authenticated"));
+        }
+        
+        String token = authCookie.getValue();
+        
+        // Verify token is valid by extracting userId
+        String userId = userManager.getUserIdFromToken(token);
+        if (userId == null || !userManager.validateToken(userId, token)) {
+            // Invalid token, clear the cookie
+            Cookie clearCookie = Cookie.of("authToken", "")
+                    .httpOnly(true)
+                    .maxAge(0);
+            return HttpResponse.unauthorized()
+                    .cookie(clearCookie)
+                    .body(Map.of("error", "Invalid or expired token"));
+        }
+        
+        // Return user info without exposing the token
+        return HttpResponse.ok(Map.of("userId", userId, "authenticated", true));
+    }
+    
+    /**
+     * Logs out the user by clearing the authentication cookie.
+     * POST /auth/logout
+     */
+    @Post("/logout")
+    @Produces(MediaType.APPLICATION_JSON)
+    public HttpResponse<?> logout() {
+        // Clear the authentication cookie
+        Cookie clearCookie = Cookie.of("authToken", "")
+                .httpOnly(true)
+                .maxAge(0);
+        
+        return HttpResponse.ok(Map.of("message", "Logged out successfully"))
+                .cookie(clearCookie);
     }
 }
 
