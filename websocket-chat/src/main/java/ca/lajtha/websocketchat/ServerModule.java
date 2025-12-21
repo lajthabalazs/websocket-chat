@@ -16,10 +16,12 @@ public class ServerModule extends AbstractModule {
     protected void configure() {
 
         // Bind PropertiesLoader as a singleton
-        bind(PropertiesLoader.class).in(Scopes.SINGLETON);
+        var propertiesLoader = new PropertiesLoader();
+        bind(PropertiesLoader.class).toInstance(propertiesLoader);
 
         // Bind TokenManager as a singleton
-        bind(TokenManager.class).in(Scopes.SINGLETON);
+        TokenManager tokenManager = new TokenManager(propertiesLoader);
+        bind(TokenManager.class).toInstance(tokenManager);
 
         // Bind UserDatabase interface to InMemoryUserDatabase implementation as a singleton
         bind(UserDatabase.class).to(InMemoryUserDatabase.class).in(Scopes.SINGLETON);
@@ -29,7 +31,7 @@ public class ServerModule extends AbstractModule {
         bind(ServerConfig.class).to(PropertiesServerConfig.class).asEagerSingleton();
 
         WebsocketManagerImpl websocketManager = new WebsocketManagerImpl();
-        ConnectionManager connectionManager = new ConnectionManager(websocketManager, getProvider(TokenManager.class).get());
+        ConnectionManager connectionManager = new ConnectionManager(websocketManager, tokenManager);
         GameManager gameManager = new GameManager(connectionManager);
         connectionManager.setGame(gameManager);
 
