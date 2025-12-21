@@ -4,8 +4,6 @@ import ca.lajtha.websocketchat.game.Game;
 import ca.lajtha.websocketchat.game.chat.ChatGameController;
 import ca.lajtha.websocketchat.server.PropertiesServerConfig;
 import ca.lajtha.websocketchat.server.ServerConfig;
-import ca.lajtha.websocketchat.server.http.HttpRequestHandler;
-import ca.lajtha.websocketchat.server.http.HttpServer;
 import ca.lajtha.websocketchat.user.InMemoryUserDatabase;
 import ca.lajtha.websocketchat.user.UserDatabase;
 import ca.lajtha.websocketchat.server.websocket.PlayerConnection;
@@ -40,11 +38,8 @@ public class ServerModule extends AbstractModule {
         // Bind WebSocketFrameHandler (can be instantiated per connection if needed)
         bind(WebSocketFrameHandler.class);
         
-        // Bind HttpServer
-        bind(HttpServer.class);
-        
-        // Bind HttpRequestHandler
-        bind(HttpRequestHandler.class);
+        // Note: HTTP server is now handled by Micronaut controllers
+        // HttpServer and HttpRequestHandler are no longer needed
     }
 }
 
