@@ -2,6 +2,7 @@ package ca.lajtha.websocketchat.game;
 
 import ca.lajtha.websocketchat.server.websocket.MessageSender;
 import ca.lajtha.websocketchat.server.websocket.TokenVerificationRequest;
+import ca.lajtha.websocketchat.user.TokenManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,11 +20,12 @@ class ConnectionManagerTest {
     private ConnectionManager connectionManager;
     @Mock private Game game;
     @Mock private MessageSender messageSender;
+    @Mock private TokenManager tokenManager;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        connectionManager = new ConnectionManager(messageSender);
+        connectionManager = new ConnectionManager(messageSender, tokenManager);
         connectionManager.setGame(game);
         objectMapper = new ObjectMapper();
     }
@@ -74,6 +76,7 @@ class ConnectionManagerTest {
         String tokenVerificationJson = objectMapper.writeValueAsString(
             new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, token));
         
+        when(tokenManager.extractUserId(token)).thenReturn(userId);
         connectionManager.playerConnected(socketId);
 
         // Act
@@ -102,6 +105,7 @@ class ConnectionManagerTest {
         String tokenVerificationJson = objectMapper.writeValueAsString(
             new TokenVerificationRequest(TokenVerificationRequest.MESSAGE_TYPE, token));
         
+        when(tokenManager.extractUserId(token)).thenReturn(null);
         connectionManager.playerConnected(socketId);
 
         // Act
@@ -169,6 +173,7 @@ class ConnectionManagerTest {
         String token = "valid-token";
         String gameMessage = "{\"type\":\"getMessages\"}";
         
+        when(tokenManager.extractUserId(token)).thenReturn(userId);
         connectionManager.playerConnected(socketId);
         
         // Authenticate first
@@ -198,6 +203,7 @@ class ConnectionManagerTest {
         String token = "valid-token";
         String message = "Test message";
         
+        when(tokenManager.extractUserId(token)).thenReturn(userId);
         connectionManager.playerConnected(socketId);
         
         // Authenticate
@@ -231,6 +237,7 @@ class ConnectionManagerTest {
         String userId = "user123";
         String token = "valid-token";
         
+        when(tokenManager.extractUserId(token)).thenReturn(userId);
         connectionManager.playerConnected(socketId);
         
         // Authenticate
@@ -278,6 +285,8 @@ class ConnectionManagerTest {
         String token1 = "token1";
         String token2 = "token2";
         
+        when(tokenManager.extractUserId(token1)).thenReturn(userId1);
+        when(tokenManager.extractUserId(token2)).thenReturn(userId2);
         connectionManager.playerConnected(socketId);
 
         // Authenticate with first token

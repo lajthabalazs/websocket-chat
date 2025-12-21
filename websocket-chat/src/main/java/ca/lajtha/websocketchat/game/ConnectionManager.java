@@ -2,6 +2,7 @@ package ca.lajtha.websocketchat.game;
 
 import ca.lajtha.websocketchat.server.websocket.MessageSender;
 import ca.lajtha.websocketchat.server.websocket.*;
+import ca.lajtha.websocketchat.user.TokenManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 
@@ -19,9 +20,12 @@ public class ConnectionManager implements MessageListener, PlayerMessageSender {
     private Game game;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MessageSender messageSender;
+    private final TokenManager tokenManager;
 
-    public ConnectionManager(MessageSender messageSender) {
+    @Inject
+    public ConnectionManager(MessageSender messageSender, TokenManager tokenManager) {
         this.messageSender = messageSender;
+        this.tokenManager = tokenManager;
     }
 
 
@@ -99,7 +103,7 @@ public class ConnectionManager implements MessageListener, PlayerMessageSender {
             }
             
             // Use token manager to get userId from JWT
-            String userId = token;
+            String userId = tokenManager.extractUserId(token);
             
             if (userId == null) {
                 sendTokenVerificationResponse(socketId, TokenVerificationResponse.failure("Invalid or expired token"));

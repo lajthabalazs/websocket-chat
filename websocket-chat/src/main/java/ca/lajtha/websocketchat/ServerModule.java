@@ -1,11 +1,10 @@
 package ca.lajtha.websocketchat;
 
-import ca.lajtha.websocketchat.game.Game;
-import ca.lajtha.websocketchat.game.chat.ChatGame;
 import ca.lajtha.websocketchat.server.PropertiesServerConfig;
 import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.server.websocket.*;
 import ca.lajtha.websocketchat.user.InMemoryUserDatabase;
+import ca.lajtha.websocketchat.user.TokenManager;
 import ca.lajtha.websocketchat.user.UserDatabase;
 import ca.lajtha.websocketchat.game.ConnectionManager;
 import ca.lajtha.websocketchat.game.GameManager;
@@ -19,6 +18,9 @@ public class ServerModule extends AbstractModule {
         // Bind PropertiesLoader as a singleton
         bind(PropertiesLoader.class).in(Scopes.SINGLETON);
 
+        // Bind TokenManager as a singleton
+        bind(TokenManager.class).in(Scopes.SINGLETON);
+
         // Bind UserDatabase interface to InMemoryUserDatabase implementation as a singleton
         bind(UserDatabase.class).to(InMemoryUserDatabase.class).in(Scopes.SINGLETON);
 
@@ -27,7 +29,7 @@ public class ServerModule extends AbstractModule {
         bind(ServerConfig.class).to(PropertiesServerConfig.class).asEagerSingleton();
 
         WebsocketManagerImpl websocketManager = new WebsocketManagerImpl();
-        ConnectionManager connectionManager = new ConnectionManager(websocketManager);
+        ConnectionManager connectionManager = new ConnectionManager(websocketManager, getProvider(TokenManager.class).get());
         GameManager gameManager = new GameManager(connectionManager);
         connectionManager.setGame(gameManager);
 

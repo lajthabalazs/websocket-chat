@@ -23,14 +23,15 @@ class WebSocketFrameHandlerTest {
 
     @Mock
     private ConnectionManager websocketConnectionManager;
-    @Mock
-    private WebsocketManager websocketManager;
     
+    private WebsocketManagerImpl websocketManager;
     private EmbeddedChannel channel;
     private WebSocketFrameHandler handler;
 
     @BeforeEach
     void setUp() {
+        websocketManager = new WebsocketManagerImpl();
+        websocketManager.addMessageListener(websocketConnectionManager);
         handler = new WebSocketFrameHandler(websocketManager);
         channel = new EmbeddedChannel(handler);
     }
@@ -77,17 +78,21 @@ class WebSocketFrameHandlerTest {
         // Arrange - reset mock to ignore the call from setUp, then use the class-level mock to capture socket IDs
         reset(websocketConnectionManager);
         ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<io.netty.channel.ChannelHandlerContext> contextCaptor = ArgumentCaptor.forClass(io.netty.channel.ChannelHandlerContext.class);
         
-        WebSocketFrameHandler handler1 = new WebSocketFrameHandler(websocketManager);
-        WebSocketFrameHandler handler2 = new WebSocketFrameHandler(websocketManager);
+        WebsocketManagerImpl manager1 = new WebsocketManagerImpl();
+        manager1.addMessageListener(websocketConnectionManager);
+        WebsocketManagerImpl manager2 = new WebsocketManagerImpl();
+        manager2.addMessageListener(websocketConnectionManager);
+        
+        WebSocketFrameHandler handler1 = new WebSocketFrameHandler(manager1);
+        WebSocketFrameHandler handler2 = new WebSocketFrameHandler(manager2);
         EmbeddedChannel channel1 = new EmbeddedChannel(handler1);
         EmbeddedChannel channel2 = new EmbeddedChannel(handler2);
 
         // Act - channels become active, triggering playerConnected calls
         // The playerConnected method is called automatically when channel becomes active
         
-        // Assert - capture socket IDs from PlayerWebsocketConnectionManager
+        // Assert - capture socket IDs from ConnectionManager
         // Verify playerConnected was called twice and capture the socket IDs
         verify(websocketConnectionManager, times(2)).playerConnected(socketIdCaptor.capture());
         
