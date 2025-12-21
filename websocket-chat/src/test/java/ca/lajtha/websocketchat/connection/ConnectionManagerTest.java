@@ -1,8 +1,9 @@
-package ca.lajtha.websocketchat.server.websocket;
+package ca.lajtha.websocketchat.connection;
 
 import ca.lajtha.websocketchat.auth.TokenManager;
 import ca.lajtha.websocketchat.game.Game;
-import ca.lajtha.websocketchat.connection.ConnectionManager;
+import ca.lajtha.websocketchat.server.websocket.MessageSender;
+import ca.lajtha.websocketchat.server.websocket.TokenVerificationRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class PlayerConnectionManagerTest {
+class ConnectionManagerTest {
 
     private ConnectionManager connectionManager;
     @Mock private Game game;
