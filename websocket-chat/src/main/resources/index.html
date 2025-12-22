@@ -89,8 +89,63 @@
                 <button type="button" id="logoutBtn" class="btn btn-secondary">Logout</button>
             </div>
         </div>
+        
+        <!-- Player View (for sending messages) -->
+        <div id="playerView" style="display: none;">
+            <h2 class="section-title">Player View</h2>
+            <div id="playerGameInfo" class="game-info-banner" style="display: none;"></div>
+            <div class="message-input-container">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    class="message-input"
+                    placeholder="Type your message here..."
+                    autocomplete="off"
+                >
+                <button type="button" id="sendMessageBtn" class="btn btn-primary">Send</button>
+            </div>
+            <div class="button-group" style="margin-top: 20px;">
+                <button type="button" id="backFromPlayerBtn" class="btn btn-secondary">Back</button>
+            </div>
+        </div>
+        
+        <!-- Display View (for viewing messages) -->
+        <div id="displayView" style="display: none;">
+            <h2 class="section-title">Display View</h2>
+            <div id="displayGameInfo" class="game-info-banner" style="display: none;"></div>
+            <div id="messagesContainer" class="messages-container">
+                <p class="empty-message">No messages yet. Messages will appear here.</p>
+            </div>
+            <div class="button-group" style="margin-top: 20px;">
+                <button type="button" id="backFromDisplayBtn" class="btn btn-secondary">Back</button>
+            </div>
+        </div>
+        
+        <!-- Mode Selection Modal -->
+        <div id="modeSelectionModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2 class="section-title">Choose Your Mode</h2>
+                <p class="subtitle">How would you like to join this game?</p>
+                <div class="mode-selection">
+                    <button type="button" id="selectPlayerModeBtn" class="btn btn-primary mode-btn">
+                        <div class="mode-icon">⌨️</div>
+                        <div class="mode-title">Player Mode</div>
+                        <div class="mode-description">Send messages to the game</div>
+                    </button>
+                    <button type="button" id="selectDisplayModeBtn" class="btn btn-primary mode-btn">
+                        <div class="mode-icon">📺</div>
+                        <div class="mode-title">Display Mode</div>
+                        <div class="mode-description">View messages from the game</div>
+                    </button>
+                </div>
+                <div class="button-group" style="margin-top: 20px;">
+                    <button type="button" id="cancelModeSelectionBtn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="/js/auth.js"></script>
+    <script src="/js/websocket.js"></script>
 </body>
 </html>

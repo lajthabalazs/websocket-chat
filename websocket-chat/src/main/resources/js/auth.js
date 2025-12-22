@@ -204,6 +204,11 @@ function showLoginState() {
 
 async function logout() {
     try {
+        // Disconnect WebSocket if connected
+        if (window.disconnectWebSocket) {
+            window.disconnectWebSocket();
+        }
+        
         // Call logout endpoint to clear HTTP-only cookie
         const response = await fetch('/auth/logout', {
             method: 'POST',
@@ -335,7 +340,24 @@ async function startNewGame() {
     }
 }
 
-async function joinSelectedGame() {
+// Show mode selection modal
+function showModeSelectionModal() {
+    const modal = document.getElementById('modeSelectionModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Hide mode selection modal
+function hideModeSelectionModal() {
+    const modal = document.getElementById('modeSelectionModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Join game with selected mode
+async function joinGameWithMode(mode) {
     const userId = localStorage.getItem('userId');
     if (!userId) {
         showMessage('User ID not found. Please log in again.', 'error');
@@ -348,6 +370,7 @@ async function joinSelectedGame() {
         return;
     }
     
+    hideModeSelectionModal();
     setGameButtonsLoading(true);
     hideMessage();
     
@@ -368,7 +391,21 @@ async function joinSelectedGame() {
         
         if (response.ok) {
             const gameName = gameSelect.options[gameSelect.selectedIndex].textContent;
-            showMessage(`Successfully joined ${gameName}!`, 'success');
+            showMessage(`Successfully joined ${gameName} in ${mode} mode!`, 'success');
+            
+            // Store the selected mode
+            localStorage.setItem('gameMode', mode);
+            localStorage.setItem('joinedGameId', selectedGameId);
+            localStorage.setItem('joinedGameName', gameName);
+            
+            // Automatically show the appropriate view
+            setTimeout(() => {
+                if (mode === 'player' && window.showPlayerView) {
+                    window.showPlayerView();
+                } else if (mode === 'display' && window.showDisplayView) {
+                    window.showDisplayView();
+                }
+            }, 500); // Small delay to let the success message show
         } else {
             showMessage(data.error || 'Failed to join game', 'error');
         }
@@ -378,6 +415,23 @@ async function joinSelectedGame() {
     } finally {
         setGameButtonsLoading(false);
     }
+}
+
+async function joinSelectedGame() {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+        showMessage('User ID not found. Please log in again.', 'error');
+        return;
+    }
+    
+    const selectedGameId = gameSelect.value;
+    if (!selectedGameId) {
+        showMessage('Please select a game first', 'error');
+        return;
+    }
+    
+    // Show mode selection modal
+    showModeSelectionModal();
 }
 
 async function refreshGamesList() {
@@ -407,6 +461,48 @@ startNewGameBtn.addEventListener('click', startNewGame);
 joinGameBtn.addEventListener('click', joinSelectedGame);
 refreshGamesBtn.addEventListener('click', refreshGamesList);
 gameSelect.addEventListener('change', updateJoinButtonState);
+
+// Event listeners for mode selection
+const selectPlayerModeBtn = document.getElementById('selectPlayerModeBtn');
+const selectDisplayModeBtn = document.getElementById('selectDisplayModeBtn');
+const cancelModeSelectionBtn = document.getElementById('cancelModeSelectionBtn');
+const modeSelectionModal = document.getElementById('modeSelectionModal');
+
+if (selectPlayerModeBtn) {
+    selectPlayerModeBtn.addEventListener('click', () => {
+        joinGameWithMode('player');
+    });
+}
+
+if (selectDisplayModeBtn) {
+    selectDisplayModeBtn.addEventListener('click', () => {
+        joinGameWithMode('display');
+    });
+}
+
+if (cancelModeSelectionBtn) {
+    cancelModeSelectionBtn.addEventListener('click', () => {
+        hideModeSelectionModal();
+    });
+}
+
+// Close modal when clicking outside of it
+if (modeSelectionModal) {
+    modeSelectionModal.addEventListener('click', (e) => {
+        if (e.target === modeSelectionModal) {
+            hideModeSelectionModal();
+        }
+    });
+}
+
+// Clear game mode when logging out
+const originalLogout = logout;
+logout = async function() {
+    localStorage.removeItem('gameMode');
+    localStorage.removeItem('joinedGameId');
+    localStorage.removeItem('joinedGameName');
+    await originalLogout();
+};
 
 // Check auth state when page loads
 checkAuthState();

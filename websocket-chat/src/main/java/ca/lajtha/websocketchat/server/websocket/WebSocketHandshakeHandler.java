@@ -36,13 +36,19 @@ public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
             // Check if this is a WebSocket upgrade request
             String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
             if ("websocket".equalsIgnoreCase(upgradeHeader)) {
-                // Extract cookie from request
+                // Try to extract token from cookie first
                 String cookieHeader = request.headers().get(HttpHeaderNames.COOKIE);
                 String token = extractTokenFromCookie(cookieHeader);
                 
+                // If no token in cookie, try query parameter (for cross-port connections)
+                if (token == null || token.isEmpty()) {
+                    String uri = request.uri();
+                    token = extractTokenFromQuery(uri);
+                }
+                
                 if (token == null || token.isEmpty()) {
                     // No token found, reject the handshake
-                    System.err.println("WebSocket handshake rejected: No authToken cookie found");
+                    System.err.println("WebSocket handshake rejected: No authToken found in cookie or query parameter");
                     ctx.writeAndFlush(createUnauthorizedResponse(request));
                     return;
                 }
@@ -78,6 +84,31 @@ public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
         Matcher matcher = COOKIE_PATTERN.matcher(cookieHeader);
         if (matcher.find()) {
             return matcher.group(1);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Extracts the authToken value from the query string (e.g., ?token=...).
+     */
+    private String extractTokenFromQuery(String uri) {
+        if (uri == null || uri.isEmpty()) {
+            return null;
+        }
+        
+        int queryIndex = uri.indexOf('?');
+        if (queryIndex == -1) {
+            return null;
+        }
+        
+        String query = uri.substring(queryIndex + 1);
+        String[] params = query.split("&");
+        
+        for (String param : params) {
+            if (param.startsWith("token=")) {
+                return param.substring(6); // "token=".length()
+            }
         }
         
         return null;
