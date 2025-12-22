@@ -4,10 +4,19 @@ let websocketReconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 3000; // 3 seconds
 
-// DOM elements
-const playerView = document.getElementById('playerView');
-const displayView = document.getElementById('displayView');
-const loggedInView = document.getElementById('loggedInView');
+// DOM elements - get them when needed to ensure they exist
+function getPlayerView() {
+    return document.getElementById('playerView');
+}
+
+function getDisplayView() {
+    return document.getElementById('displayView');
+}
+
+function getLoggedInView() {
+    return document.getElementById('loggedInView');
+}
+
 const messageInput = document.getElementById('messageInput');
 const sendMessageBtn = document.getElementById('sendMessageBtn');
 const messagesContainer = document.getElementById('messagesContainer');
@@ -59,7 +68,8 @@ async function connectWebSocket() {
         websocketReconnectAttempts = 0;
         
         // Request initial messages when connected
-        if (displayView.style.display !== 'none') {
+        const displayViewEl = getDisplayView();
+        if (displayViewEl && displayViewEl.style.display !== 'none') {
             requestMessages();
         }
     };
@@ -77,7 +87,10 @@ async function connectWebSocket() {
         console.log('WebSocket closed:', event.code, event.reason);
         
         // Attempt to reconnect if we're still in a view that needs WebSocket
-        if (playerView.style.display !== 'none' || displayView.style.display !== 'none') {
+        const playerViewEl = getPlayerView();
+        const displayViewEl = getDisplayView();
+        if ((playerViewEl && playerViewEl.style.display !== 'none') || 
+            (displayViewEl && displayViewEl.style.display !== 'none')) {
             if (websocketReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                 websocketReconnectAttempts++;
                 console.log(`Attempting to reconnect (${websocketReconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
@@ -206,9 +219,20 @@ function addMessageToDisplay(screenName, message) {
 
 // Show player view
 function showPlayerView() {
-    loggedInView.style.display = 'none';
-    displayView.style.display = 'none';
-    playerView.style.display = 'block';
+    const loggedInViewEl = getLoggedInView();
+    const displayViewEl = getDisplayView();
+    const playerViewEl = getPlayerView();
+    
+    if (!playerViewEl) {
+        console.error('Player view element not found');
+        return;
+    }
+    
+    if (loggedInViewEl) loggedInViewEl.style.display = 'none';
+    if (displayViewEl) displayViewEl.style.display = 'none';
+    playerViewEl.style.display = 'block';
+    
+    console.log('Switched to Player View');
     
     // Show game info if available
     const gameInfo = document.getElementById('playerGameInfo');
@@ -224,15 +248,28 @@ function showPlayerView() {
     
     // Focus on message input
     setTimeout(() => {
-        messageInput.focus();
+        if (messageInput) {
+            messageInput.focus();
+        }
     }, 100);
 }
 
 // Show display view
 function showDisplayView() {
-    loggedInView.style.display = 'none';
-    playerView.style.display = 'none';
-    displayView.style.display = 'block';
+    const loggedInViewEl = getLoggedInView();
+    const playerViewEl = getPlayerView();
+    const displayViewEl = getDisplayView();
+    
+    if (!displayViewEl) {
+        console.error('Display view element not found');
+        return;
+    }
+    
+    if (loggedInViewEl) loggedInViewEl.style.display = 'none';
+    if (playerViewEl) playerViewEl.style.display = 'none';
+    displayViewEl.style.display = 'block';
+    
+    console.log('Switched to Display View');
     
     // Show game info if available
     const gameInfo = document.getElementById('displayGameInfo');
@@ -249,14 +286,29 @@ function showDisplayView() {
     // Request messages when showing display view
     if (websocket && websocket.readyState === WebSocket.OPEN) {
         requestMessages();
+    } else {
+        // If WebSocket is not ready, wait for it to connect
+        const checkConnection = setInterval(() => {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                clearInterval(checkConnection);
+                requestMessages();
+            }
+        }, 100);
+        
+        // Stop checking after 5 seconds
+        setTimeout(() => clearInterval(checkConnection), 5000);
     }
 }
 
 // Show logged in view (go back)
 function showLoggedInView() {
-    playerView.style.display = 'none';
-    displayView.style.display = 'none';
-    loggedInView.style.display = 'block';
+    const playerViewEl = getPlayerView();
+    const displayViewEl = getDisplayView();
+    const loggedInViewEl = getLoggedInView();
+    
+    if (playerViewEl) playerViewEl.style.display = 'none';
+    if (displayViewEl) displayViewEl.style.display = 'none';
+    if (loggedInViewEl) loggedInViewEl.style.display = 'block';
     
     // Don't disconnect WebSocket - keep it open in case user switches views again
 }
@@ -292,8 +344,16 @@ if (backFromDisplayBtn) {
     backFromDisplayBtn.addEventListener('click', showLoggedInView);
 }
 
-// Export functions for use in auth.js
+// Export functions for use in auth.js immediately
+// This ensures they're available as soon as the script loads
 window.showPlayerView = showPlayerView;
 window.showDisplayView = showDisplayView;
 window.disconnectWebSocket = disconnectWebSocket;
+
+// Log that functions are available
+console.log('WebSocket functions exported:', {
+    showPlayerView: typeof window.showPlayerView,
+    showDisplayView: typeof window.showDisplayView,
+    disconnectWebSocket: typeof window.disconnectWebSocket
+});
 

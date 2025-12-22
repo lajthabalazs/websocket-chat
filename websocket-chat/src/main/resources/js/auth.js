@@ -399,13 +399,42 @@ async function joinGameWithMode(mode) {
             localStorage.setItem('joinedGameName', gameName);
             
             // Automatically show the appropriate view
-            setTimeout(() => {
-                if (mode === 'player' && window.showPlayerView) {
-                    window.showPlayerView();
-                } else if (mode === 'display' && window.showDisplayView) {
-                    window.showDisplayView();
+            // Use a function that waits for the view functions to be available
+            let retryCount = 0;
+            const maxRetries = 20; // Try for up to 2 seconds
+            
+            const showView = () => {
+                if (mode === 'player') {
+                    if (window.showPlayerView) {
+                        console.log('Calling showPlayerView');
+                        window.showPlayerView();
+                    } else {
+                        retryCount++;
+                        if (retryCount < maxRetries) {
+                            // Retry if function not available yet
+                            setTimeout(showView, 100);
+                        } else {
+                            console.error('showPlayerView function not available after retries');
+                        }
+                    }
+                } else if (mode === 'display') {
+                    if (window.showDisplayView) {
+                        console.log('Calling showDisplayView');
+                        window.showDisplayView();
+                    } else {
+                        retryCount++;
+                        if (retryCount < maxRetries) {
+                            // Retry if function not available yet
+                            setTimeout(showView, 100);
+                        } else {
+                            console.error('showDisplayView function not available after retries');
+                        }
+                    }
                 }
-            }, 500); // Small delay to let the success message show
+            };
+            
+            // Start trying to show the view after a short delay
+            setTimeout(showView, 300);
         } else {
             showMessage(data.error || 'Failed to join game', 'error');
         }
