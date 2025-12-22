@@ -6,3 +6,4 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 public record JoinGameMessage(String gameId) implements GameManagerMessage {
 }
 
+

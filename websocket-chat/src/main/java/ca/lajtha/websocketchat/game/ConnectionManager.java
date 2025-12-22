@@ -2,7 +2,6 @@ package ca.lajtha.websocketchat.game;
 
 import ca.lajtha.websocketchat.server.websocket.MessageSender;
 import ca.lajtha.websocketchat.server.websocket.*;
-import com.google.inject.Inject;
 
 import java.util.Map;
 import java.util.Set;
@@ -10,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Handles control messages related to authentication and authorization.
+ * Created via factory method in ServerModule to handle circular dependencies.
  */
 public class ConnectionManager implements MessageListener, PlayerMessageSender {
     private final Map<String, String> socketIdToUserId = new ConcurrentHashMap<>();
@@ -18,7 +18,6 @@ public class ConnectionManager implements MessageListener, PlayerMessageSender {
     private Game game;
     private final MessageSender messageSender;
 
-    @Inject
     public ConnectionManager(MessageSender messageSender) {
         this.messageSender = messageSender;
     }

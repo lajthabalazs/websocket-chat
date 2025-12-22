@@ -1,6 +1,6 @@
 package ca.lajtha.websocketchat;
 
-import com.google.inject.Inject;
+import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -18,12 +18,12 @@ import java.util.Properties;
  * Service for loading properties from configuration files.
  * Automatically discovers and loads all .properties files from the resources directory.
  */
+@Singleton
 public class PropertiesLoader {
     
     /**
      * Creates a PropertiesLoader that loads all .properties files from resources.
      */
-    @Inject
     public PropertiesLoader() {
         // No configuration needed - will load all .properties files
     }

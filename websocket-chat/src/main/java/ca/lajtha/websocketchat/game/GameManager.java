@@ -2,7 +2,6 @@ package ca.lajtha.websocketchat.game;
 
 import ca.lajtha.websocketchat.game.chat.ChatGame;
 import ca.lajtha.websocketchat.game.chat.ChatGameModel;
-import com.google.inject.Inject;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,6 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Manages multiple games and routes messages to the appropriate game based on player assignments.
  * Implements both Game and PlayerMessageSender interfaces to act as a router between players and games.
+ * Created via factory method in ServerModule to handle circular dependencies.
  */
 public class GameManager implements Game, PlayerMessageSender {
     
@@ -20,7 +20,6 @@ public class GameManager implements Game, PlayerMessageSender {
     private final PlayerMessageSender messageSender;
     private int gameIdCounter = 1;
     
-    @Inject
     public GameManager(PlayerMessageSender messageSender) {
         this.games = new ConcurrentHashMap<>();
         this.gameInfoMap = new ConcurrentHashMap<>();

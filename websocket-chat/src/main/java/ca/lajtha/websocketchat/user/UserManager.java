@@ -5,7 +5,8 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
 import java.util.Date;
@@ -15,6 +16,7 @@ import java.util.Properties;
  * Manages user authentication, registration, and profile operations.
  * Delegates data persistence to a UserDatabase implementation.
  */
+@Singleton
 public class UserManager {
     private final UserDatabase database;
     private final Argon2 argon2;

@@ -4,7 +4,7 @@ import ca.lajtha.websocketchat.game.chat.messages.*;
 import ca.lajtha.websocketchat.game.PlayerMessageSender;
 import ca.lajtha.websocketchat.game.Game;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
 
 import java.util.List;
 

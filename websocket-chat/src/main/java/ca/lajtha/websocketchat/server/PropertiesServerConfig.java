@@ -1,9 +1,11 @@
 package ca.lajtha.websocketchat.server;
 
 import ca.lajtha.websocketchat.PropertiesLoader;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Properties;
 
+@Singleton
 public class PropertiesServerConfig implements ServerConfig {
     private final int port;
     private final int httpPort;

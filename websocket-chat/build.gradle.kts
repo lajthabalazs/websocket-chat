@@ -21,7 +21,6 @@ repositories {
 
 dependencies {
     implementation("io.netty:netty-all:4.1.104.Final")
-    implementation("com.google.inject:guice:7.0.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
     implementation("de.mkammerer:argon2-jvm:2.12")

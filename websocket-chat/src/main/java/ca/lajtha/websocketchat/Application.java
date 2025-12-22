@@ -2,8 +2,6 @@ package ca.lajtha.websocketchat;
 
 import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.runtime.Micronaut;
 
@@ -14,13 +12,22 @@ public class Application {
     private static ApplicationContext micronautContext;
     
     public static void main(String[] args) {
-        // Create Guice injector for WebSocket server
-        Injector injector = Guice.createInjector(new ServerModule());
-        // Get server config for HTTP port
-        ServerConfig config = injector.getInstance(ServerConfig.class);
-
-        startWebsocketServer(injector);
-        startWebServer(args, config);
+        // Start Micronaut application context (this will create all beans)
+        // First, create a context to get ServerConfig for HTTP port
+        ApplicationContext tempContext = Micronaut.build(args).start();
+        ServerConfig config = tempContext.getBean(ServerConfig.class);
+        tempContext.close();
+        
+        // Now start the full Micronaut HTTP server with the correct port
+        micronautContext = Micronaut.build(args)
+                .properties(Map.of(
+                    "micronaut.server.port", String.valueOf(config.getHttpPort())
+                ))
+                .start();
+        
+        // Get WebSocket server from Micronaut context
+        WebSocketServer webSocketServer = micronautContext.getBean(WebSocketServer.class);
+        startWebsocketServer(webSocketServer);
         
         // Keep the application running
         try {
@@ -40,21 +47,8 @@ public class Application {
         }
     }
 
-    private static void startWebServer(String[] args, ServerConfig config) {
-        // Start Micronaut HTTP server
-        micronautContext = Micronaut.build(args)
-                .properties(Map.of(
-                    "micronaut.server.port", String.valueOf(config.getHttpPort())
-                ))
-                .start();
-
-        System.out.println("HTTP server started on port " + config.getHttpPort());
-        System.out.println("Connect to: http://localhost:" + config.getHttpPort());
-    }
-
-    private static void startWebsocketServer(Injector injector) {
+    private static void startWebsocketServer(WebSocketServer webSocketServer) {
         // Start WebSocket server in a separate thread
-        WebSocketServer webSocketServer = injector.getInstance(WebSocketServer.class);
         Thread webSocketThread = new Thread(() -> {
             try {
                 webSocketServer.start();

@@ -1,49 +1,56 @@
 package ca.lajtha.websocketchat;
 
-import ca.lajtha.websocketchat.server.PropertiesServerConfig;
-import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.server.websocket.*;
 import ca.lajtha.websocketchat.user.InMemoryUserDatabase;
-import ca.lajtha.websocketchat.user.TokenManager;
 import ca.lajtha.websocketchat.user.UserDatabase;
 import ca.lajtha.websocketchat.game.ConnectionManager;
 import ca.lajtha.websocketchat.game.GameManager;
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
+import io.micronaut.context.annotation.Bean;
+import io.micronaut.context.annotation.Factory;
+import jakarta.inject.Singleton;
 
-public class ServerModule extends AbstractModule {
-    @Override
-    protected void configure() {
-
-        // Bind PropertiesLoader as a singleton
-        var propertiesLoader = new PropertiesLoader();
-        bind(PropertiesLoader.class).toInstance(propertiesLoader);
-
-        // Bind TokenManager as a singleton
-        TokenManager tokenManager = new TokenManager(propertiesLoader);
-        bind(TokenManager.class).toInstance(tokenManager);
-
-        // Bind UserDatabase interface to InMemoryUserDatabase implementation as a singleton
-        bind(UserDatabase.class).to(InMemoryUserDatabase.class).in(Scopes.SINGLETON);
-
-        // Bind ServerConfig interface to PropertiesServerConfig implementation as a singleton
-        // since it loads configuration once
-        bind(ServerConfig.class).to(PropertiesServerConfig.class).asEagerSingleton();
-
-        WebsocketManagerImpl websocketManager = new WebsocketManagerImpl();
-        ConnectionManager connectionManager = new ConnectionManager(websocketManager);
-        GameManager gameManager = new GameManager(connectionManager);
-        connectionManager.setGame(gameManager);
-
+/**
+ * Factory for creating WebSocket server components as Micronaut beans.
+ * Only creates beans that need special setup (interfaces, circular dependencies, etc.).
+ * Other beans are auto-discovered via @Singleton annotation.
+ */
+@Factory
+public class ServerModule {
+    
+    @Bean
+    @Singleton
+    public UserDatabase userDatabase() {
+        return new InMemoryUserDatabase();
+    }
+    
+    @Bean
+    @Singleton
+    public WebsocketManagerImpl websocketManagerImpl() {
+        return new WebsocketManagerImpl();
+    }
+    
+    @Bean
+    @Singleton
+    public ConnectionManager connectionManager(WebsocketManagerImpl websocketManagerImpl) {
+        ConnectionManager connectionManager = new ConnectionManager(websocketManagerImpl);
         // Register ConnectionManager as a message listener
-        websocketManager.addMessageListener(connectionManager);
-
-        // Bind WebsocketManager to WebsocketManagerImpl
-        bind(WebsocketManager.class).toInstance(websocketManager);
-
-        // Bind WebSocketServer
-        bind(WebSocketServer.class);
-
+        websocketManagerImpl.addMessageListener(connectionManager);
+        return connectionManager;
+    }
+    
+    @Bean
+    @Singleton
+    public GameManager gameManager(ConnectionManager connectionManager) {
+        GameManager gameManager = new GameManager(connectionManager);
+        // Wire up the circular dependency: ConnectionManager needs GameManager
+        connectionManager.setGame(gameManager);
+        return gameManager;
+    }
+    
+    @Bean
+    @Singleton
+    public WebsocketManager websocketManager(WebsocketManagerImpl websocketManagerImpl) {
+        return websocketManagerImpl;
     }
 }
 

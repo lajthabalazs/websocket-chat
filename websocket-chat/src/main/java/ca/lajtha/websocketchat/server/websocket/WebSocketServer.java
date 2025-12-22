@@ -2,7 +2,8 @@ package ca.lajtha.websocketchat.server.websocket;
 
 import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.user.TokenManager;
-import com.google.inject.Inject;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -14,6 +15,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
+@Singleton
 public class WebSocketServer {
     private final ServerConfig config;
     private final WebsocketManager websocketManager;
