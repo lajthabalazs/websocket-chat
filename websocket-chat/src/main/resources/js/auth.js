@@ -3,28 +3,37 @@ const passwordInput = document.getElementById('password');
 const loginBtn = document.getElementById('loginBtn');
 const registerBtn = document.getElementById('registerBtn');
 const messageDiv = document.getElementById('message');
+const loggedInMessageDiv = document.getElementById('loggedInMessage');
 const authForm = document.getElementById('authForm');
 const loginView = document.getElementById('loginView');
 const loggedInView = document.getElementById('loggedInView');
 const userEmailDisplay = document.getElementById('userEmailDisplay');
 const userIdDisplay = document.getElementById('userIdDisplay');
 const logoutBtn = document.getElementById('logoutBtn');
+const gameSelect = document.getElementById('gameSelect');
+const startNewGameBtn = document.getElementById('startNewGameBtn');
+const joinGameBtn = document.getElementById('joinGameBtn');
+const refreshGamesBtn = document.getElementById('refreshGamesBtn');
 
 function showMessage(text, type) {
-    messageDiv.textContent = text;
-    messageDiv.className = `message ${type}`;
-    messageDiv.style.display = 'block';
+    const activeMessageDiv = loggedInView.style.display !== 'none' ? loggedInMessageDiv : messageDiv;
+    activeMessageDiv.textContent = text;
+    activeMessageDiv.className = `message ${type}`;
+    activeMessageDiv.style.display = 'block';
     
     // Auto-hide success messages after 3 seconds
     if (type === 'success') {
         setTimeout(() => {
-            messageDiv.style.display = 'none';
+            activeMessageDiv.style.display = 'none';
         }, 3000);
     }
 }
 
 function hideMessage() {
     messageDiv.style.display = 'none';
+    if (loggedInMessageDiv) {
+        loggedInMessageDiv.style.display = 'none';
+    }
 }
 
 function setLoading(isLoading) {
@@ -150,6 +159,8 @@ async function checkAuthState() {
         if (response.ok) {
             const data = await response.json();
             const email = localStorage.getItem('userEmail') || 'User'; // Fallback if email not in localStorage
+            // Store userId in localStorage for game operations
+            localStorage.setItem('userId', data.userId);
             showLoggedInState(email, data.userId);
         } else {
             // Not authenticated, clear any stale localStorage data
@@ -173,6 +184,9 @@ function showLoggedInState(email, userId) {
     // Update user info display
     userEmailDisplay.textContent = email;
     userIdDisplay.textContent = userId;
+    
+    // Load games list when user logs in
+    loadGamesList();
 }
 
 function showLoginState() {
@@ -220,6 +234,179 @@ async function logout() {
 
 // Event listener for logout button
 logoutBtn.addEventListener('click', logout);
+
+// Game management functions
+async function loadGamesList() {
+    try {
+        const response = await fetch('/games', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const games = await response.json();
+            populateGameDropdown(games);
+        } else {
+            console.error('Failed to load games:', response.status);
+            showMessage('Failed to load games list', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading games:', error);
+        showMessage('Error loading games list', 'error');
+    }
+}
+
+function populateGameDropdown(games) {
+    // Clear existing options except the first placeholder
+    gameSelect.innerHTML = '<option value="">-- No game selected --</option>';
+    
+    if (games && games.length > 0) {
+        games.forEach(game => {
+            const option = document.createElement('option');
+            option.value = game.gameId;
+            option.textContent = `${game.name} (${game.gameId})`;
+            gameSelect.appendChild(option);
+        });
+    } else {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '-- No games available --';
+        option.disabled = true;
+        gameSelect.appendChild(option);
+    }
+    
+    // Update join button state
+    updateJoinButtonState();
+}
+
+function updateJoinButtonState() {
+    const selectedGameId = gameSelect.value;
+    joinGameBtn.disabled = !selectedGameId || selectedGameId === '';
+}
+
+async function startNewGame() {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+        showMessage('User ID not found. Please log in again.', 'error');
+        return;
+    }
+    
+    // Prompt for game name
+    const gameName = prompt('Enter a name for your new game:');
+    if (gameName === null) {
+        return; // User cancelled
+    }
+    
+    setGameButtonsLoading(true);
+    hideMessage();
+    
+    try {
+        const response = await fetch('/games', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                playerId: userId,
+                gameParameters: {
+                    name: gameName.trim() || 'New Game'
+                }
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showMessage(`Game "${gameName}" created successfully!`, 'success');
+            // Refresh the games list to include the new game
+            await loadGamesList();
+            // Select the newly created game
+            gameSelect.value = data.gameId;
+            updateJoinButtonState();
+        } else {
+            showMessage(data.error || 'Failed to create game', 'error');
+        }
+    } catch (error) {
+        console.error('Error creating game:', error);
+        showMessage('An error occurred while creating the game', 'error');
+    } finally {
+        setGameButtonsLoading(false);
+    }
+}
+
+async function joinSelectedGame() {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+        showMessage('User ID not found. Please log in again.', 'error');
+        return;
+    }
+    
+    const selectedGameId = gameSelect.value;
+    if (!selectedGameId) {
+        showMessage('Please select a game first', 'error');
+        return;
+    }
+    
+    setGameButtonsLoading(true);
+    hideMessage();
+    
+    try {
+        const response = await fetch('/games/join', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                playerId: userId,
+                gameId: selectedGameId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            const gameName = gameSelect.options[gameSelect.selectedIndex].textContent;
+            showMessage(`Successfully joined ${gameName}!`, 'success');
+        } else {
+            showMessage(data.error || 'Failed to join game', 'error');
+        }
+    } catch (error) {
+        console.error('Error joining game:', error);
+        showMessage('An error occurred while joining the game', 'error');
+    } finally {
+        setGameButtonsLoading(false);
+    }
+}
+
+async function refreshGamesList() {
+    setGameButtonsLoading(true);
+    hideMessage();
+    
+    try {
+        await loadGamesList();
+        showMessage('Game list refreshed', 'success');
+    } catch (error) {
+        console.error('Error refreshing games:', error);
+        showMessage('Failed to refresh game list', 'error');
+    } finally {
+        setGameButtonsLoading(false);
+    }
+}
+
+function setGameButtonsLoading(isLoading) {
+    startNewGameBtn.disabled = isLoading;
+    joinGameBtn.disabled = isLoading || !gameSelect.value;
+    refreshGamesBtn.disabled = isLoading;
+    gameSelect.disabled = isLoading;
+}
+
+// Event listeners for game management
+startNewGameBtn.addEventListener('click', startNewGame);
+joinGameBtn.addEventListener('click', joinSelectedGame);
+refreshGamesBtn.addEventListener('click', refreshGamesList);
+gameSelect.addEventListener('change', updateJoinButtonState);
 
 // Check auth state when page loads
 checkAuthState();

@@ -52,6 +52,8 @@
         <div id="loggedInView" style="display: none;">
             <p class="subtitle">Welcome back!</p>
             
+            <div id="loggedInMessage" class="message"></div>
+            
             <div id="userInfo" class="user-info">
                 <div class="user-email">
                     <span class="user-icon">👤</span>
@@ -63,7 +65,27 @@
                 </div>
             </div>
             
-            <div class="button-group">
+            <div class="games-section">
+                <h2 class="section-title">Games</h2>
+                
+                <div class="form-group">
+                    <label for="gameSelect">Select a game:</label>
+                    <select id="gameSelect" class="form-select">
+                        <option value="">-- No game selected --</option>
+                    </select>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" id="startNewGameBtn" class="btn btn-primary">Start New Game</button>
+                    <button type="button" id="joinGameBtn" class="btn btn-primary" disabled>Join Selected Game</button>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" id="refreshGamesBtn" class="btn btn-secondary">Refresh Game List</button>
+                </div>
+            </div>
+            
+            <div class="button-group" style="margin-top: 30px;">
                 <button type="button" id="logoutBtn" class="btn btn-secondary">Logout</button>
             </div>
         </div>
