@@ -1,6 +1,5 @@
 package ca.lajtha.websocketchat;
 
-import ca.lajtha.websocketchat.game.ConnectionManager;
 import ca.lajtha.websocketchat.game.GameManager;
 import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.server.websocket.WebSocketServer;

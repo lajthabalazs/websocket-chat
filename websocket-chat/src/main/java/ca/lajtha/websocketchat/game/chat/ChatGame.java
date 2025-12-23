@@ -1,8 +1,8 @@
 package ca.lajtha.websocketchat.game.chat;
 
 import ca.lajtha.websocketchat.game.chat.messages.*;
-import ca.lajtha.websocketchat.game.PlayerMessageSender;
 import ca.lajtha.websocketchat.game.Game;
+import ca.lajtha.websocketchat.server.websocket.MessageSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 
@@ -11,13 +11,13 @@ import java.util.List;
 public class ChatGame implements Game, ChatMessageListener {
 
     private final ChatGameModel game;
-    private final PlayerMessageSender playerConnection;
+    private final MessageSender messageSender;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Inject
-    public ChatGame(ChatGameModel game, PlayerMessageSender playerConnection) {
+    public ChatGame(ChatGameModel game, MessageSender messageSender) {
         this.game = game;
-        this.playerConnection = playerConnection;
+        this.messageSender = messageSender;
         game.addListener(this);
     }
 
@@ -88,7 +88,7 @@ public class ChatGame implements Game, ChatMessageListener {
         
         if (response != null) {
             String serializedResponse = serializeMessage(response);
-            playerConnection.sendToPlayer(playerId, serializedResponse);
+            messageSender.sendMessage(playerId, serializedResponse);
         }
     }
 
@@ -112,7 +112,7 @@ public class ChatGame implements Game, ChatMessageListener {
         List<PlayerInfo> players = game.getPlayers();
         
         for (PlayerInfo player : players) {
-            playerConnection.sendToPlayer(player.playerId(), serializedNotification);
+            messageSender.sendMessage(player.playerId(), serializedNotification);
         }
     }
 

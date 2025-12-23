@@ -1,5 +1,6 @@
 package ca.lajtha.websocketchat.server.websocket;
 
+import ca.lajtha.websocketchat.game.Game;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
@@ -14,12 +15,21 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
     private final Map<String, ChannelHandlerContext> socketChannels;
     private final Set<MessageListener> messageListeners;
+    private Game game;
 
     public WebsocketManagerImpl() {
         this.socketChannels = new ConcurrentHashMap<>();
         this.messageListeners = new HashSet<>();
     }
-    
+
+    /**
+     * Sets the game instance.
+     *
+     * @param game the game instance to set
+     */
+    public void setGame(Game game) {
+        this.game = game;
+    }
     /**
      * Registers a message listener to receive player events.
      *

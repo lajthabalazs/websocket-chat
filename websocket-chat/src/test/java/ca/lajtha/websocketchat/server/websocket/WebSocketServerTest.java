@@ -1,6 +1,5 @@
 package ca.lajtha.websocketchat.server.websocket;
 
-import ca.lajtha.websocketchat.game.ConnectionManager;
 import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.user.TokenManager;
 import org.junit.jupiter.api.BeforeEach;

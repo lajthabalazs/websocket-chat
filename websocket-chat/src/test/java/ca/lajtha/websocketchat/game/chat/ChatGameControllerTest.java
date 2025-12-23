@@ -2,7 +2,7 @@ package ca.lajtha.websocketchat.game.chat;
 
 import ca.lajtha.websocketchat.game.chat.messages.PlayerInfo;
 import ca.lajtha.websocketchat.game.chat.messages.SendMessageCommand;
-import ca.lajtha.websocketchat.game.PlayerMessageSender;
+import ca.lajtha.websocketchat.server.websocket.MessageSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,14 +24,14 @@ class ChatGameControllerTest {
     private ChatGameModel game;
 
     @Mock
-    private PlayerMessageSender playerConnection;
+    private MessageSender messageSender;
 
     private ChatGame controller;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        controller = new ChatGame(game, playerConnection);
+        controller = new ChatGame(game, messageSender);
         objectMapper = new ObjectMapper();
     }
 
@@ -53,7 +53,7 @@ class ChatGameControllerTest {
         verify(game, times(1)).getMessages();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> responseCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(1)).sendToPlayer(playerIdCaptor.capture(), responseCaptor.capture());
+        verify(messageSender, times(1)).sendMessage(playerIdCaptor.capture(), responseCaptor.capture());
         
         assertEquals(playerId, playerIdCaptor.getValue());
         String responseJson = responseCaptor.getValue();
@@ -73,7 +73,7 @@ class ChatGameControllerTest {
 
         // Assert
         verify(game, times(1)).addMessage(playerId, messageText);
-        verify(playerConnection, never()).sendToPlayer(anyString(), anyString());
+        verify(messageSender, never()).sendMessage(anyString(), anyString());
     }
 
     @Test
@@ -91,7 +91,7 @@ class ChatGameControllerTest {
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> responseCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(1)).sendToPlayer(playerIdCaptor.capture(), responseCaptor.capture());
+        verify(messageSender, times(1)).sendMessage(playerIdCaptor.capture(), responseCaptor.capture());
         
         assertEquals(playerId, playerIdCaptor.getValue());
         String responseJson = responseCaptor.getValue();
@@ -115,7 +115,7 @@ class ChatGameControllerTest {
         verify(game, never()).getMessages();
         verify(game, never()).addMessage(anyString(), anyString());
         verify(game, never()).getPlayers();
-        verify(playerConnection, never()).sendToPlayer(anyString(), anyString());
+        verify(messageSender, never()).sendMessage(anyString(), anyString());
     }
 
     @Test
@@ -135,7 +135,7 @@ class ChatGameControllerTest {
         verify(game, never()).getMessages();
         verify(game, never()).addMessage(anyString(), anyString());
         verify(game, never()).getPlayers();
-        verify(playerConnection, never()).sendToPlayer(anyString(), anyString());
+        verify(messageSender, never()).sendMessage(anyString(), anyString());
     }
 
     @Test
@@ -155,7 +155,7 @@ class ChatGameControllerTest {
         verify(game, never()).getMessages();
         verify(game, never()).addMessage(anyString(), anyString());
         verify(game, never()).getPlayers();
-        verify(playerConnection, never()).sendToPlayer(anyString(), anyString());
+        verify(messageSender, never()).sendMessage(anyString(), anyString());
     }
 
     @Test
@@ -171,7 +171,7 @@ class ChatGameControllerTest {
 
         // Assert
         verify(game, times(1)).addMessage(playerId, messageText);
-        verify(playerConnection, never()).sendToPlayer(anyString(), anyString());
+        verify(messageSender, never()).sendMessage(anyString(), anyString());
     }
 
     @Test
@@ -187,7 +187,7 @@ class ChatGameControllerTest {
         // Assert
         verify(game, times(1)).getMessages();
         ArgumentCaptor<String> responseCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(1)).sendToPlayer(eq(playerId), responseCaptor.capture());
+        verify(messageSender, times(1)).sendMessage(eq(playerId), responseCaptor.capture());
         
         String responseJson = responseCaptor.getValue();
         assertTrue(responseJson.contains("\"type\":\"getMessagesResponse\""));
@@ -207,7 +207,7 @@ class ChatGameControllerTest {
         // Assert
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> responseCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(1)).sendToPlayer(eq(playerId), responseCaptor.capture());
+        verify(messageSender, times(1)).sendMessage(eq(playerId), responseCaptor.capture());
         
         String responseJson = responseCaptor.getValue();
         assertTrue(responseJson.contains("\"type\":\"getPlayersResponse\""));
@@ -249,7 +249,7 @@ class ChatGameControllerTest {
 
         // Assert
         verify(game, times(1)).addMessage(playerId, "");
-        verify(playerConnection, never()).sendToPlayer(anyString(), anyString());
+        verify(messageSender, never()).sendMessage(anyString(), anyString());
     }
 
     @Test
@@ -267,7 +267,7 @@ class ChatGameControllerTest {
 
         // Assert
         ArgumentCaptor<String> responseCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(1)).sendToPlayer(eq(playerId), responseCaptor.capture());
+        verify(messageSender, times(1)).sendMessage(eq(playerId), responseCaptor.capture());
         
         String responseJson = responseCaptor.getValue();
         assertTrue(responseJson.contains("\"screenName\":\"player1\""));
@@ -289,7 +289,7 @@ class ChatGameControllerTest {
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> notificationCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(3)).sendToPlayer(playerIdCaptor.capture(), notificationCaptor.capture());
+        verify(messageSender, times(3)).sendMessage(playerIdCaptor.capture(), notificationCaptor.capture());
         
         List<String> notifiedPlayers = playerIdCaptor.getAllValues();
         assertTrue(notifiedPlayers.contains("player1"));
@@ -314,7 +314,7 @@ class ChatGameControllerTest {
         // Assert
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(3)).sendToPlayer(playerIdCaptor.capture(), anyString());
+        verify(messageSender, times(3)).sendMessage(playerIdCaptor.capture(), anyString());
         
         List<String> notifiedPlayers = playerIdCaptor.getAllValues();
         assertTrue(notifiedPlayers.contains("player1"));
@@ -336,7 +336,7 @@ class ChatGameControllerTest {
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> notificationCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(2)).sendToPlayer(playerIdCaptor.capture(), notificationCaptor.capture());
+        verify(messageSender, times(2)).sendMessage(playerIdCaptor.capture(), notificationCaptor.capture());
         
         List<String> notifiedPlayers = playerIdCaptor.getAllValues();
         assertTrue(notifiedPlayers.contains("player1"));
@@ -361,7 +361,7 @@ class ChatGameControllerTest {
         // Assert
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(2)).sendToPlayer(playerIdCaptor.capture(), anyString());
+        verify(messageSender, times(2)).sendMessage(playerIdCaptor.capture(), anyString());
         
         List<String> notifiedPlayers = playerIdCaptor.getAllValues();
         assertTrue(notifiedPlayers.contains("player1"));
@@ -382,7 +382,7 @@ class ChatGameControllerTest {
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> notificationCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(3)).sendToPlayer(playerIdCaptor.capture(), notificationCaptor.capture());
+        verify(messageSender, times(3)).sendMessage(playerIdCaptor.capture(), notificationCaptor.capture());
         
         List<String> notifiedPlayers = playerIdCaptor.getAllValues();
         assertTrue(notifiedPlayers.contains("player1"));
@@ -410,7 +410,7 @@ class ChatGameControllerTest {
         // Assert
         verify(game, times(1)).getPlayers();
         ArgumentCaptor<String> playerIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(3)).sendToPlayer(playerIdCaptor.capture(), anyString());
+        verify(messageSender, times(3)).sendMessage(playerIdCaptor.capture(), anyString());
         
         List<String> notifiedPlayers = playerIdCaptor.getAllValues();
         assertTrue(notifiedPlayers.contains("player1"));
@@ -427,7 +427,7 @@ class ChatGameControllerTest {
 
         // Assert
         verify(game, times(1)).getPlayers();
-        verify(playerConnection, never()).sendToPlayer(anyString(), anyString());
+        verify(messageSender, never()).sendMessage(anyString(), anyString());
     }
 
     @Test
@@ -440,7 +440,7 @@ class ChatGameControllerTest {
 
         // Assert
         verify(game, times(1)).getPlayers();
-        verify(playerConnection, never()).sendToPlayer(anyString(), anyString());
+        verify(messageSender, never()).sendMessage(anyString(), anyString());
     }
 
     @Test
@@ -454,7 +454,7 @@ class ChatGameControllerTest {
 
         // Assert
         verify(game, times(1)).getPlayers();
-        verify(playerConnection, never()).sendToPlayer(anyString(), anyString());
+        verify(messageSender, never()).sendMessage(anyString(), anyString());
     }
 
     @Test
@@ -469,7 +469,7 @@ class ChatGameControllerTest {
 
         // Assert
         ArgumentCaptor<String> notificationCaptor = ArgumentCaptor.forClass(String.class);
-        verify(playerConnection, times(3)).sendToPlayer(anyString(), notificationCaptor.capture());
+        verify(messageSender, times(3)).sendMessage(anyString(), notificationCaptor.capture());
         
         List<String> notifications = notificationCaptor.getAllValues();
         for (String notification : notifications) {
