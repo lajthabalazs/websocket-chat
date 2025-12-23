@@ -86,27 +86,14 @@ async function loginUser(userId) {
             return;
         }
 
-        // Now fetch the WebSocket token from the cookie
-        const tokenResponse = await fetch('/auth/websocket-token', {
-            method: 'GET',
-            credentials: 'include'
-        });
-
-        const tokenData = await tokenResponse.json().catch(() => ({}));
-
-        if (!tokenResponse.ok || !tokenData.token) {
-            setStatus(userId, tokenData.error || 'Failed to get token', 'error');
-            return;
-        }
-
-        setStatus(userId, 'Logged in (token stored)', 'success');
+        setStatus(userId, 'Logged in', 'success');
     } catch (e) {
         console.error('Login error for user', userId, e);
         setStatus(userId, 'Error logging in user', 'error');
     }
 }
 
-function getWebSocketUrlWithToken(token) {
+function getWebSocketUrl(token) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
     const port = '8080'; // WebSocket server port
@@ -130,7 +117,7 @@ function connectWebSocket(userId) {
         state.websocket = null;
     }
 
-    const url = getWebSocketUrlWithToken(state.token);
+    const url = getWebSocketUrl(state.token);
     console.log('[TestClient] Creating WebSocket for user', userId, 'readyState before:', state.websocket ? state.websocket.readyState : 'none');
     setStatus(userId, 'Connecting WebSocket...', 'info');
 

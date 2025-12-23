@@ -30,40 +30,10 @@ async function getWebSocketUrl() {
     const port = '8080'; // WebSocket server port
     
     console.log('Getting WebSocket URL...', { protocol, host, port });
-    
-    // Fetch token from server (since cookie is HttpOnly, we can't read it directly)
-    try {
-        console.log('Fetching WebSocket token from /auth/websocket-token...');
-        const response = await fetch('/auth/websocket-token', {
-            method: 'GET',
-            credentials: 'include'
-        });
-        
-        console.log('Token response status:', response.status);
-        
-        if (response.ok) {
-            const data = await response.json();
-            const token = data.token;
-            if (token) {
-                const url = `${protocol}//${host}:${port}/websocket?token=${encodeURIComponent(token)}`;
-                console.log('WebSocket URL with token:', url.replace(/\?token=[^&]+/, '?token=***'));
-                return url;
-            } else {
-                console.warn('Token response OK but no token in response');
-            }
-        } else {
-            console.error('Failed to get token, status:', response.status);
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
-        }
-    } catch (error) {
-        console.error('Error fetching WebSocket token:', error);
-    }
-    
-    // Fallback: try without token (might work if cookies are sent)
-    const fallbackUrl = `${protocol}//${host}:${port}/websocket`;
-    console.log('Using fallback URL (no token):', fallbackUrl);
-    return fallbackUrl;
+
+    const url = `${protocol}//${host}:${port}/websocket`;
+    console.log('Using auth cookie for token:', url);
+    return url;
 }
 
 // Connect to WebSocket - returns a promise that resolves when connected

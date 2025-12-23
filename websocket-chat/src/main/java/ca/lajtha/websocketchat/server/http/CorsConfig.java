@@ -8,8 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * CORS configuration to allow the HTTP test UI (running on a different port)
- * to call the Micronaut HTTP endpoints (e.g. /auth/websocket-token) with credentials.
+ * CORS configuration to allow websocket to run on a different port for testing
  */
 @Factory
 public class CorsConfig {

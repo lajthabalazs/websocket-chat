@@ -126,32 +126,6 @@ public class AuthController {
     }
     
     /**
-     * Returns the authentication token for WebSocket connections.
-     * This allows JavaScript to get the token (which is HttpOnly) to use in WebSocket URL.
-     * GET /auth/websocket-token
-     */
-    @Get("/websocket-token")
-    @Produces(MediaType.APPLICATION_JSON)
-    public HttpResponse<?> getWebSocketToken(Cookies cookies) {
-        Cookie authCookie = cookies.findCookie("authToken").orElse(null);
-        
-        if (authCookie == null || authCookie.getValue() == null || authCookie.getValue().isEmpty()) {
-            return HttpResponse.unauthorized().body(Map.of("error", "Not authenticated"));
-        }
-        
-        String token = authCookie.getValue();
-        
-        // Verify token is valid
-        String userId = userManager.getUserIdFromToken(token);
-        if (userId == null || !userManager.validateToken(userId, token)) {
-            return HttpResponse.unauthorized().body(Map.of("error", "Invalid or expired token"));
-        }
-        
-        // Return token for WebSocket connection
-        return HttpResponse.ok(Map.of("token", token));
-    }
-    
-    /**
      * Logs out the user by clearing the authentication cookie.
      * POST /auth/logout
      */

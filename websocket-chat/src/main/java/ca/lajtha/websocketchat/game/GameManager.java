@@ -114,6 +114,7 @@ public class GameManager implements Game, MessageSender {
     }
 
     private void assignPlayerToGame(String playerId, String gameId) {
+        logger.info("Assigning player {} to game with ID {}", playerId, gameId);
         removePlayerFromGame(playerId);
         Game game = games.get(gameId);
         if (game != null) {
@@ -126,11 +127,13 @@ public class GameManager implements Game, MessageSender {
         Game game = playerToGame.remove(playerId);
         if (game != null) {
             game.handlePlayerDisconnected(playerId);
+            logger.info("Removing player {} from existing game", playerId);
         }
     }
     
     @Override
     public void handlePlayerMessage(String playerId, String message) {
+        logger.info("Received player message from {}: {}", playerId, message);
         Game game = playerToGame.get(playerId);
         if (game != null) {
             game.handlePlayerMessage(playerId, message);
@@ -149,7 +152,6 @@ public class GameManager implements Game, MessageSender {
     public void handlePlayerDisconnected(String playerId) {
         removePlayerFromGame(playerId);
     }
-    
     @Override
     public void sendMessage(String playerId, String message) {
         messageSender.sendMessage(playerId, message);
