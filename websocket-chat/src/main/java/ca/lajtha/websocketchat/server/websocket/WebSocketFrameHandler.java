@@ -43,7 +43,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             ctx.channel().attr(HANDSHAKE_COMPLETE_KEY).set(true);
             
             System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ", userId: " + userId + ")");
-            websocketManager.playerConnected(socketId, ctx);
+            websocketManager.playerConnected(userId, ctx);
         } else {
             System.out.println("Received non-handshake event: " + evt.getClass().getName());
         }
@@ -83,7 +83,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             System.out.println("Received from socket " + socketId + " (userId: " + userId + "): " + request);
             
             // Forward message to game
-            websocketManager.handlePlayerMessage(socketId, request);
+            websocketManager.handlePlayerMessage(userId, request);
         } else {
             String message = "Unsupported frame type: " + frame.getClass().getName();
             throw new UnsupportedOperationException(message);
@@ -99,7 +99,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         
         if (socketId != null) {
             System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ", userId: " + userId + ")");
-            websocketManager.playerDisconnected(socketId);
+            websocketManager.playerDisconnected(userId);
         } else {
             System.out.println("Client disconnected before handshake completed: " + ctx.channel().remoteAddress() + 
                     " (userId: " + userId + ", handshakeComplete: " + handshakeComplete + ")");

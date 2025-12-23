@@ -94,36 +94,39 @@ public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
      * @param ctx the channel handler context for the socket's connection
      */
     @Override
-    public void playerConnected(String socketId, ChannelHandlerContext ctx) {
-        socketChannels.put(socketId, ctx);
-        notifyPlayerConnected(socketId);
+    public void playerConnected(String userId, ChannelHandlerContext ctx) {
+        socketChannels.put(userId, ctx);
+        System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (userId: " + userId + ")");
+        notifyPlayerConnected(userId);
     }
 
     /**
      * Unregisters a socket's channel.
      *
-     * @param socketId the unique identifier of the socket
+     * @param userId the unique identifier of the socket
      */
     @Override
-    public void playerDisconnected(String socketId) {
-        socketChannels.remove(socketId);
-        notifyPlayerDisconnected(socketId);
+    public void playerDisconnected(String userId) {
+        socketChannels.remove(userId);
+        System.out.println("Client disconnected: " + userId + " (userId: " + userId + ")");
+        notifyPlayerDisconnected(userId);
     }
 
     @Override
-    public void handlePlayerMessage(String socketId, String request) {
-        notifyPlayerMessage(socketId, request);
+    public void handlePlayerMessage(String userId, String request) {
+        System.out.println("Websocket manager received: " + userId + " (userId: " + userId + ")");
+        notifyPlayerMessage(userId, request);
     }
 
     /**
      * Sends a message to a specific socket.
      * 
-     * @param socketId the unique identifier of the socket
+     * @param userId the unique identifier of the socket
      * @param message the message to send
      */
     @Override
-    public void sendMessage(String socketId, String message) {
-        ChannelHandlerContext ctx = socketChannels.get(socketId);
+    public void sendMessage(String userId, String message) {
+        ChannelHandlerContext ctx = socketChannels.get(userId);
         if (ctx != null && ctx.channel().isActive()) {
             ctx.channel().writeAndFlush(new TextWebSocketFrame(message));
         }
