@@ -29,77 +29,140 @@ async function getWebSocketUrl() {
     const host = window.location.hostname;
     const port = '8080'; // WebSocket server port
     
+    console.log('Getting WebSocket URL...', { protocol, host, port });
+    
     // Fetch token from server (since cookie is HttpOnly, we can't read it directly)
     try {
+        console.log('Fetching WebSocket token from /auth/websocket-token...');
         const response = await fetch('/auth/websocket-token', {
             method: 'GET',
             credentials: 'include'
         });
         
+        console.log('Token response status:', response.status);
+        
         if (response.ok) {
             const data = await response.json();
             const token = data.token;
             if (token) {
-                return `${protocol}//${host}:${port}/websocket?token=${encodeURIComponent(token)}`;
+                const url = `${protocol}//${host}:${port}/websocket?token=${encodeURIComponent(token)}`;
+                console.log('WebSocket URL with token:', url.replace(/\?token=[^&]+/, '?token=***'));
+                return url;
+            } else {
+                console.warn('Token response OK but no token in response');
             }
+        } else {
+            console.error('Failed to get token, status:', response.status);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
         }
     } catch (error) {
         console.error('Error fetching WebSocket token:', error);
     }
     
     // Fallback: try without token (might work if cookies are sent)
-    return `${protocol}//${host}:${port}/websocket`;
+    const fallbackUrl = `${protocol}//${host}:${port}/websocket`;
+    console.log('Using fallback URL (no token):', fallbackUrl);
+    return fallbackUrl;
 }
 
-// Connect to WebSocket
+// Connect to WebSocket - returns a promise that resolves when connected
 async function connectWebSocket() {
+    // If already connected, return immediately
     if (websocket && websocket.readyState === WebSocket.OPEN) {
         console.log('WebSocket already connected');
-        return;
+        return Promise.resolve();
+    }
+
+    // If connecting, wait for it
+    if (websocket && websocket.readyState === WebSocket.CONNECTING) {
+        console.log('WebSocket is connecting, waiting...');
+        return new Promise((resolve, reject) => {
+            const checkConnection = setInterval(() => {
+                if (websocket.readyState === WebSocket.OPEN) {
+                    clearInterval(checkConnection);
+                    resolve();
+                } else if (websocket.readyState === WebSocket.CLOSED) {
+                    clearInterval(checkConnection);
+                    reject(new Error('WebSocket connection failed'));
+                }
+            }, 100);
+            
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                clearInterval(checkConnection);
+                reject(new Error('WebSocket connection timeout'));
+            }, 10000);
+        });
+    }
+
+    // Close existing connection if it's in a bad state
+    if (websocket) {
+        websocket.close();
+        websocket = null;
     }
 
     const url = await getWebSocketUrl();
-    console.log('Connecting to WebSocket:', url.replace(/\?token=[^&]+/, '?token=***')); // Hide token in logs
+    console.log('About to create WebSocket connection to:', url.replace(/\?token=[^&]+/, '?token=***')); // Hide token in logs
     
-    websocket = new WebSocket(url);
-
-    websocket.onopen = function(event) {
-        console.log('WebSocket connected');
-        websocketReconnectAttempts = 0;
-        
-        // Request initial messages when connected
-        const displayViewEl = getDisplayView();
-        if (displayViewEl && displayViewEl.style.display !== 'none') {
-            requestMessages();
+    return new Promise((resolve, reject) => {
+        console.log('Creating WebSocket instance...');
+        try {
+            websocket = new WebSocket(url);
+            console.log('WebSocket instance created, readyState:', websocket.readyState);
+        } catch (error) {
+            console.error('Error creating WebSocket:', error);
+            reject(error);
+            return;
         }
-    };
 
-    websocket.onmessage = function(event) {
-        console.log('WebSocket message received:', event.data);
-        handleWebSocketMessage(event.data);
-    };
-
-    websocket.onerror = function(error) {
-        console.error('WebSocket error:', error);
-    };
-
-    websocket.onclose = function(event) {
-        console.log('WebSocket closed:', event.code, event.reason);
-        
-        // Attempt to reconnect if we're still in a view that needs WebSocket
-        const playerViewEl = getPlayerView();
-        const displayViewEl = getDisplayView();
-        if ((playerViewEl && playerViewEl.style.display !== 'none') || 
-            (displayViewEl && displayViewEl.style.display !== 'none')) {
-            if (websocketReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                websocketReconnectAttempts++;
-                console.log(`Attempting to reconnect (${websocketReconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
-                setTimeout(connectWebSocket, RECONNECT_DELAY);
-            } else {
-                console.error('Max reconnection attempts reached');
+        websocket.onopen = function(event) {
+            console.log('WebSocket connected');
+            websocketReconnectAttempts = 0;
+            resolve();
+            
+            // Request initial messages when connected
+            const displayViewEl = getDisplayView();
+            if (displayViewEl && displayViewEl.style.display !== 'none') {
+                requestMessages();
             }
-        }
-    };
+        };
+
+        websocket.onmessage = function(event) {
+            console.log('WebSocket message received:', event.data);
+            handleWebSocketMessage(event.data);
+        };
+
+        websocket.onerror = function(error) {
+            console.error('WebSocket error event fired:', error);
+            console.error('WebSocket readyState:', websocket.readyState);
+            console.error('WebSocket URL:', url.replace(/\?token=[^&]+/, '?token=***'));
+            // Note: error object might not have useful info, but we log it anyway
+            reject(new Error('WebSocket connection error'));
+        };
+
+        websocket.onclose = function(event) {
+            console.log('WebSocket closed:', event.code, event.reason);
+            
+            // Attempt to reconnect if we're still in a view that needs WebSocket
+            const playerViewEl = getPlayerView();
+            const displayViewEl = getDisplayView();
+            if ((playerViewEl && playerViewEl.style.display !== 'none') || 
+                (displayViewEl && displayViewEl.style.display !== 'none')) {
+                if (websocketReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    websocketReconnectAttempts++;
+                    console.log(`Attempting to reconnect (${websocketReconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+                    setTimeout(() => {
+                        connectWebSocket().catch(err => {
+                            console.error('Reconnection failed:', err);
+                        });
+                    }, RECONNECT_DELAY);
+                } else {
+                    console.error('Max reconnection attempts reached');
+                }
+            }
+        };
+    });
 }
 
 // Disconnect WebSocket
@@ -110,10 +173,22 @@ function disconnectWebSocket() {
     }
 }
 
-// Send message through WebSocket
-function sendWebSocketMessage(message) {
+// Send message through WebSocket - ensures connection before sending
+async function sendWebSocketMessage(message) {
+    // Ensure WebSocket is connected
     if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-        console.error('WebSocket is not connected');
+        console.log('WebSocket not connected, attempting to connect...');
+        try {
+            await connectWebSocket();
+        } catch (error) {
+            console.error('Failed to connect WebSocket:', error);
+            return false;
+        }
+    }
+
+    // Double-check after connection attempt
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+        console.error('WebSocket is still not connected after connection attempt');
         return false;
     }
 
@@ -164,12 +239,12 @@ function requestMessages() {
 }
 
 // Send a chat message
-function sendChatMessage(messageText) {
+async function sendChatMessage(messageText) {
     if (!messageText || messageText.trim() === '') {
         return false;
     }
     
-    return sendWebSocketMessage({
+    return await sendWebSocketMessage({
         type: 'sendMessage',
         message: messageText.trim()
     });
@@ -244,7 +319,17 @@ function showPlayerView() {
     }
     
     // Connect WebSocket if not already connected
-    connectWebSocket();
+    connectWebSocket().catch(error => {
+        console.error('Failed to connect WebSocket in player view:', error);
+        // Show user-friendly error message
+        const gameInfo = document.getElementById('playerGameInfo');
+        if (gameInfo) {
+            gameInfo.textContent = 'Error: Could not connect to server. Please try again.';
+            gameInfo.style.background = '#fee2e2';
+            gameInfo.style.color = '#991b1b';
+            gameInfo.style.borderColor = '#fca5a5';
+        }
+    });
     
     // Focus on message input
     setTimeout(() => {
@@ -281,23 +366,20 @@ function showDisplayView() {
     }
     
     // Connect WebSocket if not already connected
-    connectWebSocket();
-    
-    // Request messages when showing display view
-    if (websocket && websocket.readyState === WebSocket.OPEN) {
+    connectWebSocket().then(() => {
+        // Request messages when connected
         requestMessages();
-    } else {
-        // If WebSocket is not ready, wait for it to connect
-        const checkConnection = setInterval(() => {
-            if (websocket && websocket.readyState === WebSocket.OPEN) {
-                clearInterval(checkConnection);
-                requestMessages();
-            }
-        }, 100);
-        
-        // Stop checking after 5 seconds
-        setTimeout(() => clearInterval(checkConnection), 5000);
-    }
+    }).catch(error => {
+        console.error('Failed to connect WebSocket in display view:', error);
+        // Show user-friendly error message
+        const gameInfo = document.getElementById('displayGameInfo');
+        if (gameInfo) {
+            gameInfo.textContent = 'Error: Could not connect to server. Please try again.';
+            gameInfo.style.background = '#fee2e2';
+            gameInfo.style.color = '#991b1b';
+            gameInfo.style.borderColor = '#fca5a5';
+        }
+    });
 }
 
 // Show logged in view (go back)
@@ -315,22 +397,40 @@ function showLoggedInView() {
 
 // Event listeners
 if (sendMessageBtn) {
-    sendMessageBtn.addEventListener('click', () => {
+    sendMessageBtn.addEventListener('click', async () => {
         const message = messageInput.value;
-        if (sendChatMessage(message)) {
+        if (await sendChatMessage(message)) {
             messageInput.value = '';
             messageInput.focus();
+        } else {
+            // Show error feedback
+            const originalPlaceholder = messageInput.placeholder;
+            messageInput.placeholder = 'Error: Could not send message. Try again.';
+            messageInput.style.borderColor = '#fca5a5';
+            setTimeout(() => {
+                messageInput.placeholder = originalPlaceholder;
+                messageInput.style.borderColor = '';
+            }, 3000);
         }
     });
 }
 
 if (messageInput) {
-    messageInput.addEventListener('keypress', (e) => {
+    messageInput.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             const message = messageInput.value;
-            if (sendChatMessage(message)) {
+            if (await sendChatMessage(message)) {
                 messageInput.value = '';
+            } else {
+                // Show error feedback
+                const originalPlaceholder = messageInput.placeholder;
+                messageInput.placeholder = 'Error: Could not send message. Try again.';
+                messageInput.style.borderColor = '#fca5a5';
+                setTimeout(() => {
+                    messageInput.placeholder = originalPlaceholder;
+                    messageInput.style.borderColor = '';
+                }, 3000);
             }
         }
     });

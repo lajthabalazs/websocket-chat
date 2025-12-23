@@ -33,17 +33,26 @@ public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
         if (msg instanceof FullHttpRequest) {
             FullHttpRequest request = (FullHttpRequest) msg;
             
+            System.out.println("Received HTTP request: " + request.method() + " " + request.uri() + " from " + ctx.channel().remoteAddress());
+            System.out.println("Upgrade header: " + request.headers().get(HttpHeaderNames.UPGRADE));
+            System.out.println("Connection header: " + request.headers().get(HttpHeaderNames.CONNECTION));
+            
             // Check if this is a WebSocket upgrade request
             String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
             if ("websocket".equalsIgnoreCase(upgradeHeader)) {
+                System.out.println("WebSocket upgrade request detected");
                 // Try to extract token from cookie first
                 String cookieHeader = request.headers().get(HttpHeaderNames.COOKIE);
+                System.out.println("Cookie header: " + (cookieHeader != null ? cookieHeader.substring(0, Math.min(50, cookieHeader.length())) + "..." : "null"));
                 String token = extractTokenFromCookie(cookieHeader);
+                System.out.println("Token from cookie: " + (token != null ? "found" : "not found"));
                 
                 // If no token in cookie, try query parameter (for cross-port connections)
                 if (token == null || token.isEmpty()) {
                     String uri = request.uri();
+                    System.out.println("Checking query parameter in URI: " + uri);
                     token = extractTokenFromQuery(uri);
+                    System.out.println("Token from query: " + (token != null ? "found" : "not found"));
                 }
                 
                 if (token == null || token.isEmpty()) {

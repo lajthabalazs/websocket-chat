@@ -40,6 +40,7 @@ public class WebSocketServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
+                            System.out.println("New channel initialized from: " + ch.remoteAddress());
                             ChannelPipeline pipeline = ch.pipeline();
                             
                             // HTTP codec for handling HTTP upgrade requests

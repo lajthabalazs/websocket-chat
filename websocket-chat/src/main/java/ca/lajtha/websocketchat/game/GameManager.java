@@ -47,16 +47,12 @@ public class GameManager implements Game, PlayerMessageSender {
             ? (String) gameParameters.get("name") 
             : "Game " + gameId;
         gameInfoMap.put(gameId, new GameInfo(gameId, gameName, playerId, new Date()));
-        
-        // Automatically join the creator to the game
-        joinGame(playerId, gameId);
-        
         return gameId;
     }
 
     /**
      * Joins a player to a game.
-     * 
+     *
      * @param playerId the ID of the player joining
      * @param gameId the ID of the game to join
      * @throws IllegalArgumentException if the game does not exist
