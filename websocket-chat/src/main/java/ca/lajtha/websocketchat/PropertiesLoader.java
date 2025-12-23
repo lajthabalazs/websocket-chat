@@ -1,6 +1,9 @@
 package ca.lajtha.websocketchat;
 
 import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -20,6 +23,7 @@ import java.util.Properties;
  */
 @Singleton
 public class PropertiesLoader {
+    private static final Logger logger = LoggerFactory.getLogger(PropertiesLoader.class);
     
     /**
      * Creates a PropertiesLoader that loads all .properties files from resources.
@@ -140,9 +144,9 @@ public class PropertiesLoader {
             Properties fileProps = new Properties();
             fileProps.load(input);
             props.putAll(fileProps);
-            System.out.println("Loaded properties from: " + path);
+            logger.info("Loaded properties from: {}", path);
         } catch (IOException e) {
-            System.err.println("Warning: Error loading properties from " + path + ": " + e.getMessage());
+            logger.warn("Warning: Error loading properties from {}: {}", path, e.getMessage());
         }
     }
     
@@ -159,10 +163,10 @@ public class PropertiesLoader {
                 Properties fileProps = new Properties();
                 fileProps.load(input);
                 props.putAll(fileProps);
-                System.out.println("Loaded properties from: " + fileName);
+                logger.info("Loaded properties from: {}", fileName);
             }
         } catch (IOException e) {
-            System.err.println("Warning: Error loading " + fileName + ": " + e.getMessage());
+            logger.warn("Warning: Error loading {}: {}", fileName, e.getMessage());
         }
     }
     
@@ -194,7 +198,7 @@ public class PropertiesLoader {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            System.err.println("Warning: Invalid integer value for " + key + ": " + value + ", using default: " + defaultValue);
+            logger.warn("Warning: Invalid integer value for {}: {}, using default: {}", key, value, defaultValue);
             return defaultValue;
         }
     }

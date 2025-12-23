@@ -4,6 +4,8 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
 
 @Controller
 public class StaticResourceController {
+    private static final Logger logger = LoggerFactory.getLogger(StaticResourceController.class);
     
     @Get("/css/{filename}")
     @Produces("text/css")
@@ -45,7 +48,7 @@ public class StaticResourceController {
                 return reader.lines().collect(Collectors.joining("\n"));
             }
         } catch (IOException e) {
-            System.err.println("Error loading resource " + path + ": " + e.getMessage());
+            logger.error("Error loading resource {}", path, e);
             return null;
         }
     }

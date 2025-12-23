@@ -5,10 +5,13 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.util.AttributeKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
 public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketFrameHandler.class);
     private static final AttributeKey<String> SOCKET_ID_KEY = AttributeKey.valueOf("socketId");
     private static final AttributeKey<Boolean> HANDSHAKE_COMPLETE_KEY = AttributeKey.valueOf("handshakeComplete");
     // Use the same USER_ID_KEY as WebSocketHandshakeHandler
@@ -22,17 +25,17 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        System.out.println("WebSocketFrameHandler received user event: " + evt.getClass().getName());
+        logger.debug("WebSocketFrameHandler received user event: {}", evt.getClass().getName());
         
         // This is called when the WebSocket handshake is complete
         if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete) {
-            System.out.println("WebSocket handshake completion event received");
+            logger.debug("WebSocket handshake completion event received");
             
             // Verify that the connection was authenticated during handshake
             String userId = ctx.channel().attr(USER_ID_KEY).get();
             
             if (userId == null || userId.isEmpty()) {
-                System.err.println("WebSocket connection rejected: No authenticated userId found. Connection from: " + ctx.channel().remoteAddress());
+                logger.warn("WebSocket connection rejected: No authenticated userId found. Connection from: {}", ctx.channel().remoteAddress());
                 ctx.close();
                 return;
             }
@@ -42,10 +45,10 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             ctx.channel().attr(SOCKET_ID_KEY).set(socketId);
             ctx.channel().attr(HANDSHAKE_COMPLETE_KEY).set(true);
             
-            System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ", userId: " + userId + ")");
+            logger.info("Client connected: {} (socketId: {}, userId: {})", ctx.channel().remoteAddress(), socketId, userId);
             websocketManager.playerConnected(userId, ctx);
         } else {
-            System.out.println("Received non-handshake event: " + evt.getClass().getName());
+            logger.debug("Received non-handshake event: {}", evt.getClass().getName());
         }
         super.userEventTriggered(ctx, evt);
     }
@@ -55,7 +58,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         // Verify handshake completed
         Boolean handshakeComplete = ctx.channel().attr(HANDSHAKE_COMPLETE_KEY).get();
         if (handshakeComplete == null || !handshakeComplete) {
-            System.err.println("Warning: Received frame before handshake completed. Closing connection.");
+            logger.warn("Warning: Received frame before handshake completed. Closing connection.");
             ctx.close();
             return;
         }
@@ -63,7 +66,7 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         // Verify authentication before processing any frames
         String userId = ctx.channel().attr(USER_ID_KEY).get();
         if (userId == null || userId.isEmpty()) {
-            System.err.println("Warning: Received frame from unauthenticated connection. Closing connection.");
+            logger.warn("Warning: Received frame from unauthenticated connection. Closing connection.");
             ctx.close();
             return;
         }
@@ -76,11 +79,11 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             // Get the socketId from channel attributes
             String socketId = ctx.channel().attr(SOCKET_ID_KEY).get();
             if (socketId == null) {
-                System.err.println("Warning: Received message from channel without socketId");
+                logger.warn("Warning: Received message from channel without socketId");
                 return;
             }
             
-            System.out.println("Received from socket " + socketId + " (userId: " + userId + "): " + request);
+            logger.debug("Received from socket {} (userId: {}): {}", socketId, userId, request);
             
             // Forward message to game
             websocketManager.handlePlayerMessage(userId, request);
@@ -98,18 +101,17 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
         Boolean handshakeComplete = ctx.channel().attr(HANDSHAKE_COMPLETE_KEY).get();
         
         if (socketId != null) {
-            System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ", userId: " + userId + ")");
+            logger.info("Client disconnected: {} (socketId: {}, userId: {})", ctx.channel().remoteAddress(), socketId, userId);
             websocketManager.playerDisconnected(userId);
         } else {
-            System.out.println("Client disconnected before handshake completed: " + ctx.channel().remoteAddress() + 
-                    " (userId: " + userId + ", handshakeComplete: " + handshakeComplete + ")");
+            logger.debug("Client disconnected before handshake completed: {} (userId: {}, handshakeComplete: {})", 
+                    ctx.channel().remoteAddress(), userId, handshakeComplete);
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        System.err.println("Exception caught: " + cause.getMessage());
-        cause.printStackTrace();
+        logger.error("Exception caught in WebSocketFrameHandler", cause);
         ctx.close();
     }
 }

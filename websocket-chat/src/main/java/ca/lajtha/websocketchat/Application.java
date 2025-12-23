@@ -4,10 +4,13 @@ import ca.lajtha.websocketchat.server.ServerConfig;
 import ca.lajtha.websocketchat.server.websocket.WebSocketServer;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.runtime.Micronaut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class Application {
+    private static final Logger logger = LoggerFactory.getLogger(Application.class);
     
     private static ApplicationContext micronautContext;
     
@@ -33,7 +36,7 @@ public class Application {
         try {
             // Add shutdown hook
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("Shutting down...");
+                logger.info("Shutting down...");
                 if (micronautContext != null) {
                     micronautContext.close();
                 }
@@ -42,7 +45,7 @@ public class Application {
             // Wait indefinitely
             Thread.currentThread().join();
         } catch (InterruptedException e) {
-            System.err.println("Application interrupted: " + e.getMessage());
+            logger.error("Application interrupted", e);
             Thread.currentThread().interrupt();
         }
     }
@@ -53,7 +56,7 @@ public class Application {
             try {
                 webSocketServer.start();
             } catch (InterruptedException e) {
-                System.err.println("WebSocket server interrupted: " + e.getMessage());
+                logger.error("WebSocket server interrupted", e);
                 Thread.currentThread().interrupt();
             }
         });

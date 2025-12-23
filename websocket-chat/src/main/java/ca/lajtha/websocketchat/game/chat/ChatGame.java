@@ -5,10 +5,13 @@ import ca.lajtha.websocketchat.game.Game;
 import ca.lajtha.websocketchat.server.websocket.MessageSender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class ChatGame implements Game, ChatMessageListener {
+    private static final Logger logger = LoggerFactory.getLogger(ChatGame.class);
 
     private final ChatGameModel game;
     private final MessageSender messageSender;
@@ -79,7 +82,7 @@ public class ChatGame implements Game, ChatMessageListener {
                     yield null; // No response needed for set screen name
                 } catch (IllegalArgumentException e) {
                     // Could return an error response here if needed
-                    System.err.println("Error setting screen name for player " + playerId + ": " + e.getMessage());
+                    logger.warn("Error setting screen name for player {}: {}", playerId, e.getMessage());
                     yield null;
                 }
             }

@@ -5,6 +5,8 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
  */
 @Controller("/test")
 public class TestClientController {
+    private static final Logger logger = LoggerFactory.getLogger(TestClientController.class);
 
     @Get
     @Produces(MediaType.TEXT_HTML)
@@ -29,7 +32,7 @@ public class TestClientController {
     private String loadHtmlFromResources(String filename) {
         try (InputStream input = getClass().getClassLoader().getResourceAsStream(filename)) {
             if (input == null) {
-                System.err.println("Warning: " + filename + " not found in resources for test client");
+                logger.warn("Warning: {} not found in resources for test client", filename);
                 return "<html><body><h1>Test Client</h1><p>test.html not found in resources.</p></body></html>";
             }
             try (BufferedReader reader = new BufferedReader(
@@ -37,7 +40,7 @@ public class TestClientController {
                 return reader.lines().collect(Collectors.joining("\n"));
             }
         } catch (IOException e) {
-            System.err.println("Error loading " + filename + " for test client: " + e.getMessage());
+            logger.error("Error loading {} for test client", filename, e);
             return "<html><body><h1>Test Client</h1><p>Error loading HTML file.</p></body></html>";
         }
     }

@@ -3,6 +3,8 @@ package ca.lajtha.websocketchat.game;
 import ca.lajtha.websocketchat.game.chat.ChatGame;
 import ca.lajtha.websocketchat.game.chat.ChatGameModel;
 import ca.lajtha.websocketchat.server.websocket.MessageSender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
  * Created via factory method in ServerModule to handle circular dependencies.
  */
 public class GameManager implements Game, MessageSender {
+    private static final Logger logger = LoggerFactory.getLogger(GameManager.class);
     
     private final Map<String, SerializedGame> games;
     private final Map<String, GameInfo> gameInfoMap;
@@ -101,7 +104,7 @@ public class GameManager implements Game, MessageSender {
             // Give up to 5 seconds for pending tasks to complete
             boolean shutdown = game.shutdown(5000);
             if (!shutdown) {
-                System.err.println("Warning: SerializedGame executor for " + gameId + " did not shutdown gracefully, forcing shutdown");
+                logger.warn("Warning: SerializedGame executor for {} did not shutdown gracefully, forcing shutdown", gameId);
                 game.shutdownNow();
             }
         

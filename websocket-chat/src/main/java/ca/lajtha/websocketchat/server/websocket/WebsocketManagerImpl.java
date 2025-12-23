@@ -3,6 +3,8 @@ package ca.lajtha.websocketchat.server.websocket;
 import ca.lajtha.websocketchat.game.Game;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -13,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Implementation of WebsocketManager that sends messages to WebSocket connections.
  */
 public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
+    private static final Logger logger = LoggerFactory.getLogger(WebsocketManagerImpl.class);
     private final Map<String, ChannelHandlerContext> socketChannels;
     private final Set<MessageListener> messageListeners;
     private Game game;
@@ -58,8 +61,7 @@ public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
             try {
                 listener.playerConnected(socketId);
             } catch (Exception e) {
-                System.err.println("Error notifying listener of player connected: " + e.getMessage());
-                e.printStackTrace();
+                logger.error("Error notifying listener of player connected: {}", socketId, e);
             }
         }
     }
@@ -74,8 +76,7 @@ public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
             try {
                 listener.playerDisconnected(socketId);
             } catch (Exception e) {
-                System.err.println("Error notifying listener of player disconnected: " + e.getMessage());
-                e.printStackTrace();
+                logger.error("Error notifying listener of player disconnected: {}", socketId, e);
             }
         }
     }
@@ -91,8 +92,7 @@ public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
             try {
                 listener.handlePlayerMessage(socketId, request);
             } catch (Exception e) {
-                System.err.println("Error notifying listener of player message: " + e.getMessage());
-                e.printStackTrace();
+                logger.error("Error notifying listener of player message: {}", socketId, e);
             }
         }
     }
@@ -106,7 +106,7 @@ public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
     @Override
     public void playerConnected(String userId, ChannelHandlerContext ctx) {
         socketChannels.put(userId, ctx);
-        System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (userId: " + userId + ")");
+        logger.info("Client connected: {} (userId: {})", ctx.channel().remoteAddress(), userId);
         notifyPlayerConnected(userId);
     }
 
@@ -118,13 +118,13 @@ public class WebsocketManagerImpl implements WebsocketManager, MessageSender {
     @Override
     public void playerDisconnected(String userId) {
         socketChannels.remove(userId);
-        System.out.println("Client disconnected: " + userId + " (userId: " + userId + ")");
+        logger.info("Client disconnected: {} (userId: {})", userId, userId);
         notifyPlayerDisconnected(userId);
     }
 
     @Override
     public void handlePlayerMessage(String userId, String request) {
-        System.out.println("Websocket manager received: " + userId + " (userId: " + userId + ")");
+        logger.debug("Websocket manager received message from userId: {}", userId);
         notifyPlayerMessage(userId, request);
     }
 

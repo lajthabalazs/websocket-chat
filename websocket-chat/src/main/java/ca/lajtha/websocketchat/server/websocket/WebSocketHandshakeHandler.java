@@ -10,6 +10,8 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.AttributeKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,6 +21,7 @@ import java.util.regex.Pattern;
  * from the HTTP upgrade request and validating it before the WebSocket connection is established.
  */
 public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketHandshakeHandler.class);
     private static final AttributeKey<String> USER_ID_KEY = AttributeKey.valueOf("userId");
     private static final Pattern COOKIE_PATTERN = Pattern.compile("authToken=([^;\\s]+)");
     
@@ -33,37 +36,37 @@ public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
         if (msg instanceof FullHttpRequest) {
             FullHttpRequest request = (FullHttpRequest) msg;
             
-            System.out.println("Received HTTP request: " + request.method() + " " + request.uri() + " from " + ctx.channel().remoteAddress());
-            System.out.println("Upgrade header: " + request.headers().get(HttpHeaderNames.UPGRADE));
-            System.out.println("Connection header: " + request.headers().get(HttpHeaderNames.CONNECTION));
+            logger.debug("Received HTTP request: {} {} from {}", request.method(), request.uri(), ctx.channel().remoteAddress());
+            logger.debug("Upgrade header: {}", request.headers().get(HttpHeaderNames.UPGRADE));
+            logger.debug("Connection header: {}", request.headers().get(HttpHeaderNames.CONNECTION));
             
             // Check if this is a WebSocket upgrade request
             String upgradeHeader = request.headers().get(HttpHeaderNames.UPGRADE);
             if ("websocket".equalsIgnoreCase(upgradeHeader)) {
-                System.out.println("WebSocket upgrade request detected");
+                logger.debug("WebSocket upgrade request detected");
                 // Try to extract token from cookie first
                 String cookieHeader = request.headers().get(HttpHeaderNames.COOKIE);
                 if (cookieHeader != null) {
                     // Check if authToken cookie is present (without logging the full token)
                     boolean hasAuthToken = cookieHeader.contains("authToken=");
-                    System.out.println("Cookie header present: " + (hasAuthToken ? "yes (contains authToken)" : "yes (no authToken)"));
+                    logger.debug("Cookie header present: {}", hasAuthToken ? "yes (contains authToken)" : "yes (no authToken)");
                 } else {
-                    System.out.println("Cookie header: null");
+                    logger.debug("Cookie header: null");
                 }
                 String token = extractTokenFromCookie(cookieHeader);
-                System.out.println("Token from cookie: " + (token != null ? "found" : "not found"));
+                logger.debug("Token from cookie: {}", token != null ? "found" : "not found");
                 
                 // If no token in cookie, try query parameter (for cross-port connections)
                 if (token == null || token.isEmpty()) {
                     String uri = request.uri();
-                    System.out.println("Checking query parameter in URI: " + uri);
+                    logger.debug("Checking query parameter in URI: {}", uri);
                     token = extractTokenFromQuery(uri);
-                    System.out.println("Token from query: " + (token != null ? "found" : "not found"));
+                    logger.debug("Token from query: {}", token != null ? "found" : "not found");
                 }
                 
                 if (token == null || token.isEmpty()) {
                     // No token found, reject the handshake
-                    System.err.println("WebSocket handshake rejected: No authToken found in cookie or query parameter");
+                    logger.warn("WebSocket handshake rejected: No authToken found in cookie or query parameter");
                     ctx.writeAndFlush(createUnauthorizedResponse(request));
                     return;
                 }
@@ -73,15 +76,15 @@ public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
                 
                 if (userId == null) {
                     // Invalid token, reject the handshake
-                    System.err.println("WebSocket handshake rejected: Invalid or expired token");
+                    logger.warn("WebSocket handshake rejected: Invalid or expired token");
                     ctx.writeAndFlush(createUnauthorizedResponse(request));
                     return;
                 }
                 
                 // Store userId in channel attributes for later use
                 ctx.channel().attr(USER_ID_KEY).set(userId);
-                System.out.println("WebSocket handshake authenticated for userId: " + userId);
-                System.out.println("Passing request to WebSocketServerProtocolHandler for handshake completion...");
+                logger.info("WebSocket handshake authenticated for userId: {}", userId);
+                logger.debug("Passing request to WebSocketServerProtocolHandler for handshake completion...");
                 
                 // Retain the request reference before passing to WebSocketServerProtocolHandler
                 // This is important when using HttpObjectAggregator
@@ -95,8 +98,7 @@ public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
     
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        System.err.println("Exception in WebSocketHandshakeHandler: " + cause.getMessage());
-        cause.printStackTrace();
+        logger.error("Exception in WebSocketHandshakeHandler", cause);
         ctx.close();
     }
     

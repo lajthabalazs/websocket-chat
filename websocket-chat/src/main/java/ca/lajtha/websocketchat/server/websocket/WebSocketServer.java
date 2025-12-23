@@ -14,9 +14,12 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class WebSocketServer {
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketServer.class);
     private final ServerConfig config;
     private final WebsocketManager websocketManager;
     private final TokenManager tokenManager;
@@ -40,7 +43,7 @@ public class WebSocketServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
-                            System.out.println("New channel initialized from: " + ch.remoteAddress());
+                            logger.debug("New channel initialized from: {}", ch.remoteAddress());
                             ChannelPipeline pipeline = ch.pipeline();
                             
                             // HTTP codec for handling HTTP upgrade requests
@@ -72,8 +75,8 @@ public class WebSocketServer {
                     .childOption(ChannelOption.SO_KEEPALIVE, config.isSocketKeepalive());
 
             ChannelFuture future = bootstrap.bind(config.getPort()).sync();
-            System.out.println("WebSocket server started on port " + config.getPort());
-            System.out.println("Connect to: ws://localhost:" + config.getPort() + config.getWebsocketPath());
+            logger.info("WebSocket server started on port {}", config.getPort());
+            logger.info("Connect to: ws://localhost:{}{}", config.getPort(), config.getWebsocketPath());
 
             future.channel().closeFuture().sync();
         } finally {

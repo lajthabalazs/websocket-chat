@@ -79,8 +79,6 @@ class DependencyInjectionTest {
         // Verify that WebSocket-related beans are initialized
         assertTrue(applicationContext.findBean(WebsocketManager.class).isPresent(),
             "WebsocketManager should be initialized");
-        assertTrue(applicationContext.findBean(ConnectionManager.class).isPresent(),
-            "ConnectionManager should be initialized");
         assertTrue(applicationContext.findBean(GameManager.class).isPresent(),
             "GameManager should be initialized");
         assertTrue(applicationContext.findBean(WebSocketServer.class).isPresent(),
@@ -105,24 +103,6 @@ class DependencyInjectionTest {
         
         WebSocketServer webSocketServer = applicationContext.findBean(WebSocketServer.class).orElse(null);
         assertNotNull(webSocketServer, "WebSocketServer should be created with all dependencies injected");
-    }
-
-    @Test
-    void circularDependencyIsResolved() {
-        // Verify that the circular dependency between ConnectionManager and GameManager is resolved
-        // The fact that the application context started successfully means the circular dependency was resolved
-        
-        ConnectionManager connectionManager = applicationContext.findBean(ConnectionManager.class).orElse(null);
-        GameManager gameManager = applicationContext.findBean(GameManager.class).orElse(null);
-        
-        assertNotNull(connectionManager, "ConnectionManager should be created");
-        assertNotNull(gameManager, "GameManager should be created");
-        
-        // Both beans exist, which means the circular dependency was resolved
-        // The factory method in ServerModule handles this by:
-        // 1. Creating ConnectionManager first
-        // 2. Creating GameManager with ConnectionManager
-        // 3. Wiring them together via connectionManager.setGame(gameManager)
     }
 
     @Test

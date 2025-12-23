@@ -7,6 +7,8 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
@@ -16,6 +18,7 @@ import java.util.Properties;
  */
 @Singleton
 public class TokenManager {
+    private static final Logger logger = LoggerFactory.getLogger(TokenManager.class);
     private final Algorithm jwtAlgorithm;
     private final PropertiesLoader propertiesLoader;
     
@@ -44,7 +47,7 @@ public class TokenManager {
         Properties props = propertiesLoader.loadProperties();
         String secret = propertiesLoader.getProperty(props, "jwt.secret", DEFAULT_JWT_SECRET);
         if (DEFAULT_JWT_SECRET.equals(secret)) {
-            System.err.println("Warning: Using default JWT secret. Please change jwt.secret in server.properties for production!");
+            logger.warn("Warning: Using default JWT secret. Please change jwt.secret in server.properties for production!");
         }
         return secret;
     }

@@ -22,7 +22,7 @@ class WebSocketFrameHandlerTest {
     private static final AttributeKey<String> USER_ID_KEY = WebSocketHandshakeHandler.getUserIdKey();
 
     @Mock
-    private ConnectionManager websocketConnectionManager;
+    private MessageListener messageListener;
     
     private WebsocketManagerImpl websocketManager;
     private EmbeddedChannel channel;
@@ -31,7 +31,7 @@ class WebSocketFrameHandlerTest {
     @BeforeEach
     void setUp() {
         websocketManager = new WebsocketManagerImpl();
-        websocketManager.addMessageListener(websocketConnectionManager);
+        websocketManager.addMessageListener(messageListener);
         handler = new WebSocketFrameHandler(websocketManager);
         
         // Create channel without handler first, set userId attribute, then add handler
@@ -83,13 +83,13 @@ class WebSocketFrameHandlerTest {
     @Test
     void channelActive_generatesUniqueSocketIds() {
         // Arrange - reset mock to ignore the call from setUp, then use the class-level mock to capture socket IDs
-        reset(websocketConnectionManager);
+        reset(messageListener);
         ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
         
         WebsocketManagerImpl manager1 = new WebsocketManagerImpl();
-        manager1.addMessageListener(websocketConnectionManager);
+        manager1.addMessageListener(messageListener);
         WebsocketManagerImpl manager2 = new WebsocketManagerImpl();
-        manager2.addMessageListener(websocketConnectionManager);
+        manager2.addMessageListener(messageListener);
         
         WebSocketFrameHandler handler1 = new WebSocketFrameHandler(manager1);
         WebSocketFrameHandler handler2 = new WebSocketFrameHandler(manager2);
@@ -110,7 +110,7 @@ class WebSocketFrameHandlerTest {
         
         // Assert - capture socket IDs from ConnectionManager
         // Verify playerConnected was called twice and capture the socket IDs
-        verify(websocketConnectionManager, times(2)).playerConnected(socketIdCaptor.capture());
+        verify(messageListener, times(2)).playerConnected(socketIdCaptor.capture());
         
         // Get the captured socket IDs
         java.util.List<String> capturedSocketIds = socketIdCaptor.getAllValues();
@@ -141,7 +141,7 @@ class WebSocketFrameHandlerTest {
         assertNotNull(socketId, "SocketId should be set during channelActive");
         
         // Reset mock to ignore the call from setUp
-        reset(websocketConnectionManager);
+        reset(messageListener);
         
         // Act
         channel.writeInbound(textFrame);
@@ -149,7 +149,7 @@ class WebSocketFrameHandlerTest {
         // Assert - verify that handlePlayerMessage was called with correct parameters
         ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        verify(websocketConnectionManager, times(1)).handlePlayerMessage(socketIdCaptor.capture(), messageCaptor.capture());
+        verify(messageListener, times(1)).handlePlayerMessage(socketIdCaptor.capture(), messageCaptor.capture());
         
         assertEquals(socketId, socketIdCaptor.getValue(), "SocketId should match");
         assertEquals(testMessage, messageCaptor.getValue(), "Message should match");
@@ -168,13 +168,13 @@ class WebSocketFrameHandlerTest {
         channel.attr(SOCKET_ID_KEY).set(null);
         
         // Reset mock to ignore the call from setUp
-        reset(websocketConnectionManager);
+        reset(messageListener);
         
         // Act
         channel.writeInbound(textFrame);
         
         // Assert - verify that handlePlayerMessage was NOT called
-        verify(websocketConnectionManager, never()).handlePlayerMessage(anyString(), anyString());
+        verify(messageListener, never()).handlePlayerMessage(anyString(), anyString());
     }
 
     @Test
@@ -188,14 +188,14 @@ class WebSocketFrameHandlerTest {
         assertNotNull(socketId, "SocketId should be set");
         
         // Reset mock to ignore the call from setUp
-        reset(websocketConnectionManager);
+        reset(messageListener);
         
         // Act - close channel
         channel.close();
         
         // Assert - verify playerDisconnected was called with correct socketId
         ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(websocketConnectionManager, times(1)).playerDisconnected(socketIdCaptor.capture());
+        verify(messageListener, times(1)).playerDisconnected(socketIdCaptor.capture());
         
         assertEquals(socketId, socketIdCaptor.getValue(), "SocketId should match");
     }
@@ -218,7 +218,7 @@ class WebSocketFrameHandlerTest {
         String socketId = channel.attr(SOCKET_ID_KEY).get();
         
         // Reset mock to ignore the call from setUp
-        reset(websocketConnectionManager);
+        reset(messageListener);
         
         // Act
         channel.writeInbound(frame1);
@@ -227,7 +227,7 @@ class WebSocketFrameHandlerTest {
         
         // Assert - verify all messages were forwarded
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        verify(websocketConnectionManager, times(3)).handlePlayerMessage(eq(socketId), messageCaptor.capture());
+        verify(messageListener, times(3)).handlePlayerMessage(eq(socketId), messageCaptor.capture());
         
         java.util.List<String> capturedMessages = messageCaptor.getAllValues();
         assertEquals(message1, capturedMessages.get(0));

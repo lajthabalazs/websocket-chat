@@ -9,6 +9,9 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Date;
 import java.util.Properties;
 
@@ -18,6 +21,7 @@ import java.util.Properties;
  */
 @Singleton
 public class UserManager {
+    private static final Logger logger = LoggerFactory.getLogger(UserManager.class);
     private final UserDatabase database;
     private final Argon2 argon2;
     private final Algorithm jwtAlgorithm;
@@ -57,7 +61,7 @@ public class UserManager {
         Properties props = propertiesLoader.loadProperties();
         String secret = propertiesLoader.getProperty(props, "jwt.secret", DEFAULT_JWT_SECRET);
         if (DEFAULT_JWT_SECRET.equals(secret)) {
-            System.err.println("Warning: Using default JWT secret. Please change jwt.secret in server.properties for production!");
+            logger.warn("Warning: Using default JWT secret. Please change jwt.secret in server.properties for production!");
         }
         return secret;
     }

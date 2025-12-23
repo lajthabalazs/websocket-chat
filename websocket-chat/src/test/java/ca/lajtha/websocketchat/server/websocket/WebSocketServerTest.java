@@ -22,9 +22,6 @@ class WebSocketServerTest {
     
     @Mock
     private TokenManager tokenManager;
-    
-    @Mock
-    private ConnectionManager websocketConnectionManager;
 
     private WebSocketServer server;
 

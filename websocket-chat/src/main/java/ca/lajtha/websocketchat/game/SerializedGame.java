@@ -1,5 +1,8 @@
 package ca.lajtha.websocketchat.game;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.*;
 
 /**
@@ -11,6 +14,7 @@ import java.util.concurrent.*;
  * in a serialized manner.
  */
 public class SerializedGame implements Game {
+    private static final Logger logger = LoggerFactory.getLogger(SerializedGame.class);
     
     private final Game delegate;
     private final ExecutorService executor;
@@ -65,8 +69,7 @@ public class SerializedGame implements Game {
             try {
                 delegate.handlePlayerMessage(playerId, message);
             } catch (Exception e) {
-                System.err.println("Error processing player message in game " + gameId + ": " + e.getMessage());
-                e.printStackTrace();
+                logger.error("Error processing player message in game {} for player {}", gameId, playerId, e);
             }
         });
     }
@@ -77,8 +80,7 @@ public class SerializedGame implements Game {
             try {
                 delegate.handlePlayerConnected(playerId);
             } catch (Exception e) {
-                System.err.println("Error processing player connection in game " + gameId + ": " + e.getMessage());
-                e.printStackTrace();
+                logger.error("Error processing player connection in game {} for player {}", gameId, playerId, e);
             }
         });
     }
@@ -89,8 +91,7 @@ public class SerializedGame implements Game {
             try {
                 delegate.handlePlayerDisconnected(playerId);
             } catch (Exception e) {
-                System.err.println("Error processing player disconnection in game " + gameId + ": " + e.getMessage());
-                e.printStackTrace();
+                logger.error("Error processing player disconnection in game {} for player {}", gameId, playerId, e);
             }
         });
     }
