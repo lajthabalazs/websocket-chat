@@ -22,8 +22,12 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        System.out.println("WebSocketFrameHandler received user event: " + evt.getClass().getName());
+        
         // This is called when the WebSocket handshake is complete
         if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete) {
+            System.out.println("WebSocket handshake completion event received");
+            
             // Verify that the connection was authenticated during handshake
             String userId = ctx.channel().attr(USER_ID_KEY).get();
             
@@ -40,6 +44,8 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
             
             System.out.println("Client connected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ", userId: " + userId + ")");
             websocketManager.playerConnected(socketId, ctx);
+        } else {
+            System.out.println("Received non-handshake event: " + evt.getClass().getName());
         }
         super.userEventTriggered(ctx, evt);
     }
@@ -88,11 +94,15 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<WebSocket
     public void channelInactive(ChannelHandlerContext ctx) {
         // Get the socketId from channel attributes
         String socketId = ctx.channel().attr(SOCKET_ID_KEY).get();
+        String userId = ctx.channel().attr(USER_ID_KEY).get();
+        Boolean handshakeComplete = ctx.channel().attr(HANDSHAKE_COMPLETE_KEY).get();
+        
         if (socketId != null) {
-            System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ")");
+            System.out.println("Client disconnected: " + ctx.channel().remoteAddress() + " (socketId: " + socketId + ", userId: " + userId + ")");
             websocketManager.playerDisconnected(socketId);
         } else {
-            System.out.println("Client disconnected before handshake completed: " + ctx.channel().remoteAddress());
+            System.out.println("Client disconnected before handshake completed: " + ctx.channel().remoteAddress() + 
+                    " (userId: " + userId + ", handshakeComplete: " + handshakeComplete + ")");
         }
     }
 

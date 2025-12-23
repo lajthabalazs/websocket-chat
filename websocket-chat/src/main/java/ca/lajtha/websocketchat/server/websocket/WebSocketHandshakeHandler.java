@@ -43,7 +43,13 @@ public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
                 System.out.println("WebSocket upgrade request detected");
                 // Try to extract token from cookie first
                 String cookieHeader = request.headers().get(HttpHeaderNames.COOKIE);
-                System.out.println("Cookie header: " + (cookieHeader != null ? cookieHeader.substring(0, Math.min(50, cookieHeader.length())) + "..." : "null"));
+                if (cookieHeader != null) {
+                    // Check if authToken cookie is present (without logging the full token)
+                    boolean hasAuthToken = cookieHeader.contains("authToken=");
+                    System.out.println("Cookie header present: " + (hasAuthToken ? "yes (contains authToken)" : "yes (no authToken)"));
+                } else {
+                    System.out.println("Cookie header: null");
+                }
                 String token = extractTokenFromCookie(cookieHeader);
                 System.out.println("Token from cookie: " + (token != null ? "found" : "not found"));
                 
@@ -75,11 +81,23 @@ public class WebSocketHandshakeHandler extends ChannelInboundHandlerAdapter {
                 // Store userId in channel attributes for later use
                 ctx.channel().attr(USER_ID_KEY).set(userId);
                 System.out.println("WebSocket handshake authenticated for userId: " + userId);
+                System.out.println("Passing request to WebSocketServerProtocolHandler for handshake completion...");
+                
+                // Retain the request reference before passing to WebSocketServerProtocolHandler
+                // This is important when using HttpObjectAggregator
+                request.retain();
             }
         }
         
-        // Pass the message to the next handler
+        // Pass the message to the next handler (WebSocketServerProtocolHandler)
         super.channelRead(ctx, msg);
+    }
+    
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        System.err.println("Exception in WebSocketHandshakeHandler: " + cause.getMessage());
+        cause.printStackTrace();
+        ctx.close();
     }
     
     /**

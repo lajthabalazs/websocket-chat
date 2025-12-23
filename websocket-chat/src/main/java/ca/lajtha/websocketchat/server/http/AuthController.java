@@ -81,6 +81,7 @@ public class AuthController {
             Cookie authCookie = Cookie.of("authToken", loginResponse.token())
                     .httpOnly(true)
                     .secure(false) // Set to true in production with HTTPS
+                    .path("/") // Make cookie available to all paths (including /websocket)
                     .maxAge(7 * 24 * 60 * 60); // 7 days
             
             return HttpResponse.ok(new LoginResponse(null, loginResponse.userId()))

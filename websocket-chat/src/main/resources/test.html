@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat - Test Client</title>
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 WebSocket Chat Test Client</h1>
+        <p class="subtitle">
+            This page provides 5 built-in test users for quickly exercising registration, login, and WebSocket messaging.
+        </p>
+
+        <div class="card">
+            <h2 class="section-title">Test Users</h2>
+            <p class="subtitle">
+                Use the buttons to register and log in users, establish WebSocket connections, and send test messages.
+            </p>
+
+            <div class="table-wrapper">
+                <table class="game-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Email</th>
+                            <th>Password</th>
+                            <th>Register</th>
+                            <th>Login</th>
+                            <th>Connect WebSocket</th>
+                            <th>Send Test Message</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="testUsersTableBody">
+                        <!-- Rows are populated by test-client.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">Messages Received (User 5)</h2>
+            <p class="subtitle">
+                All messages received on the WebSocket connection for the 5th test user will appear below.
+            </p>
+            <textarea id="user5Messages"
+                      class="message-input"
+                      style="height: 200px; width: 100%; resize: vertical;"
+                      readonly
+            ></textarea>
+        </div>
+
+        <div class="button-group" style="margin-top: 24px;">
+            <a href="/" class="btn btn-secondary">Back to Main App</a>
+        </div>
+    </div>
+
+    <script src="/js/test-client.js"></script>
+</body>
+</html>
+
+

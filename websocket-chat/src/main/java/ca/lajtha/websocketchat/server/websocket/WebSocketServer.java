@@ -53,7 +53,15 @@ public class WebSocketServer {
                             pipeline.addLast(new WebSocketHandshakeHandler(tokenManager));
                             
                             // Handles WebSocket handshake and frames
-                            pipeline.addLast(new WebSocketServerProtocolHandler(config.getWebsocketPath()));
+                            // Using checkStartsWith=true to match paths that start with /websocket (e.g., /websocket?token=...)
+                            pipeline.addLast(new WebSocketServerProtocolHandler(
+                                    config.getWebsocketPath(),
+                                    null,
+                                    true, // allowExtensions - support permessage-deflate
+                                    65536, // maxFrameSize
+                                    false, // allowMaskMismatch
+                                    true // checkStartsWith - allows /websocket?token=... to match /websocket path
+                            ));
                             
                             // Custom handler for WebSocket messages
                             WebSocketFrameHandler webSocketFrameHandler = new WebSocketFrameHandler(websocketManager);

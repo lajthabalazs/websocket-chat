@@ -19,7 +19,6 @@ body {
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     padding: 40px;
-    max-width: 500px;
     width: 100%;
 }
 
@@ -308,7 +307,6 @@ input[type="password"]:focus {
     background: white;
     border-radius: 20px;
     padding: 40px;
-    max-width: 500px;
     width: 90%;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
