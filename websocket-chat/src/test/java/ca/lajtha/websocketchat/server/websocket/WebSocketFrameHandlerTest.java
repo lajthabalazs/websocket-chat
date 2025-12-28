@@ -1,14 +1,15 @@
 package ca.lajtha.websocketchat.server.websocket;
 
+import ca.lajtha.websocketchat.game.Game;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.util.AttributeKey;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -21,6 +22,8 @@ class WebSocketFrameHandlerTest {
     private static final AttributeKey<String> SOCKET_ID_KEY = AttributeKey.valueOf("socketId");
     private static final AttributeKey<String> USER_ID_KEY = WebSocketHandshakeHandler.getUserIdKey();
 
+    @Mock
+    private Game game;
     
     private WebsocketManagerImpl websocketManager;
     private EmbeddedChannel channel;
@@ -29,6 +32,7 @@ class WebSocketFrameHandlerTest {
     @BeforeEach
     void setUp() {
         websocketManager = new WebsocketManagerImpl();
+        websocketManager.setGame(game);
         handler = new WebSocketFrameHandler(websocketManager);
         
         // Create channel without handler first, set userId attribute, then add handler
@@ -37,7 +41,8 @@ class WebSocketFrameHandlerTest {
         channel.attr(USER_ID_KEY).set("test-user-id");
         channel.pipeline().addLast(handler);
         // Manually trigger channelActive since we added handler after channel creation
-        channel.pipeline().fireChannelActive();
+        channel.pipeline().fireUserEventTriggered(new WebSocketServerProtocolHandler.HandshakeComplete(null, null, null));
+
     }
 
     @AfterEach
@@ -79,11 +84,14 @@ class WebSocketFrameHandlerTest {
 
     @Test
     void channelActive_generatesUniqueSocketIds() {
-        // Arrange - reset mock to ignore the call from setUp, then use the class-level mock to capture socket IDs
-        ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
+        // Arrange - create separate game mocks for each manager
+        Game game1 = mock(Game.class);
+        Game game2 = mock(Game.class);
         
         WebsocketManagerImpl manager1 = new WebsocketManagerImpl();
+        manager1.setGame(game1);
         WebsocketManagerImpl manager2 = new WebsocketManagerImpl();
+        manager2.setGame(game2);
         
         WebSocketFrameHandler handler1 = new WebSocketFrameHandler(manager1);
         WebSocketFrameHandler handler2 = new WebSocketFrameHandler(manager2);
@@ -92,28 +100,23 @@ class WebSocketFrameHandlerTest {
         EmbeddedChannel channel1 = new EmbeddedChannel();
         channel1.attr(USER_ID_KEY).set("test-user-1");
         channel1.pipeline().addLast(handler1);
-        channel1.pipeline().fireChannelActive();
+        channel1.pipeline().fireUserEventTriggered(new WebSocketServerProtocolHandler.HandshakeComplete(null, null, null));
         
         EmbeddedChannel channel2 = new EmbeddedChannel();
         channel2.attr(USER_ID_KEY).set("test-user-2");
         channel2.pipeline().addLast(handler2);
-        channel2.pipeline().fireChannelActive();
-
-        // Act - channels become active, triggering playerConnected calls
-        // The playerConnected method is called automatically when channel becomes active
+        channel2.pipeline().fireUserEventTriggered(new WebSocketServerProtocolHandler.HandshakeComplete(null, null, null));
         
-        // Assert - capture socket IDs from ConnectionManager
-        // Verify playerConnected was called twice and capture the socket IDs
+        // Assert - verify that handlePlayerConnected was called for each user
+        verify(game1, times(1)).handlePlayerConnected("test-user-1");
+        verify(game2, times(1)).handlePlayerConnected("test-user-2");
         
-        // Get the captured socket IDs
-        java.util.List<String> capturedSocketIds = socketIdCaptor.getAllValues();
-        String socketId1 = capturedSocketIds.get(0);
-        String socketId2 = capturedSocketIds.get(1);
-        
-        // Assert - socketIds should be unique
-        assertNotNull(socketId1, "First socket ID should not be null");
-        assertNotNull(socketId2, "Second socket ID should not be null");
-        assertNotEquals(socketId1, socketId2, "Each connection should have a unique socketId");
+        // Assert - verify socket IDs are unique
+        String socketId1 = channel1.attr(SOCKET_ID_KEY).get();
+        String socketId2 = channel2.attr(SOCKET_ID_KEY).get();
+        assertNotNull(socketId1, "SocketId1 should be set");
+        assertNotNull(socketId2, "SocketId2 should be set");
+        assertNotEquals(socketId1, socketId2, "Socket IDs should be unique");
         
         // Cleanup
         channel1.finish();
@@ -134,17 +137,14 @@ class WebSocketFrameHandlerTest {
         assertNotNull(socketId, "SocketId should be set during channelActive");
         
         // Reset mock to ignore the call from setUp
+        reset(game);
 
         
         // Act
         channel.writeInbound(textFrame);
         
         // Assert - verify that handlePlayerMessage was called with correct parameters
-        ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        
-        assertEquals(socketId, socketIdCaptor.getValue(), "SocketId should match");
-        assertEquals(testMessage, messageCaptor.getValue(), "Message should match");
+        verify(game, times(1)).handlePlayerMessage("test-user-id", testMessage);
     }
 
     @Test
@@ -158,10 +158,16 @@ class WebSocketFrameHandlerTest {
         
         // Manually remove socketId
         channel.attr(SOCKET_ID_KEY).set(null);
+        
+        // Reset mock to ignore the call from setUp
+        reset(game);
 
         
         // Act
         channel.writeInbound(textFrame);
+        
+        // Assert - verify that handlePlayerMessage was NOT called when socketId is null
+        verify(game, never()).handlePlayerMessage(anyString(), anyString());
     }
 
     @Test
@@ -173,15 +179,16 @@ class WebSocketFrameHandlerTest {
         // Get the socketId that was set during channelActive
         String socketId = channel.attr(SOCKET_ID_KEY).get();
         assertNotNull(socketId, "SocketId should be set");
+        
+        // Reset mock to ignore the call from setUp
+        reset(game);
 
         
         // Act - close channel
         channel.close();
         
-        // Assert - verify playerDisconnected was called with correct socketId
-        ArgumentCaptor<String> socketIdCaptor = ArgumentCaptor.forClass(String.class);
-        
-        assertEquals(socketId, socketIdCaptor.getValue(), "SocketId should match");
+        // Assert - verify that handlePlayerDisconnected was called with correct userId
+        verify(game, times(1)).handlePlayerDisconnected("test-user-id");
     }
 
     @Test
@@ -198,9 +205,8 @@ class WebSocketFrameHandlerTest {
         // Read the welcome message to clear it
         channel.readOutbound();
         
-        // Get the socketId
-        String socketId = channel.attr(SOCKET_ID_KEY).get();
-        
+        // Reset mock to ignore the call from setUp
+        reset(game);
 
         
         // Act
@@ -208,13 +214,11 @@ class WebSocketFrameHandlerTest {
         channel.writeInbound(frame2);
         channel.writeInbound(frame3);
         
-        // Assert - verify all messages were forwarded
-        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
-        
-        java.util.List<String> capturedMessages = messageCaptor.getAllValues();
-        assertEquals(message1, capturedMessages.get(0));
-        assertEquals(message2, capturedMessages.get(1));
-        assertEquals(message3, capturedMessages.get(2));
+        // Assert - verify that handlePlayerMessage was called for each message with correct parameters
+        verify(game, times(1)).handlePlayerMessage("test-user-id", message1);
+        verify(game, times(1)).handlePlayerMessage("test-user-id", message2);
+        verify(game, times(1)).handlePlayerMessage("test-user-id", message3);
+        verify(game, times(3)).handlePlayerMessage(eq("test-user-id"), anyString());
     }
 }
 
